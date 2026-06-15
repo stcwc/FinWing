@@ -4,12 +4,14 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
+import * as apigw from "aws-cdk-lib/aws-apigatewayv2";
 import * as path from "path";
 import * as fs from "fs";
 
 interface Props extends cdk.StackProps {
   envName: string;
   domainName?: string;
+  httpApi: apigw.HttpApi;
 }
 
 /** SPA hosting: private S3 bucket behind CloudFront with SPA routing. The
@@ -29,18 +31,64 @@ export class FrontendStack extends cdk.Stack {
       autoDeleteObjects: envName !== "prod",
     });
 
+    // API Gateway HTTP API endpoint host: <apiId>.execute-api.<region>.amazonaws.com.
+    const apiHost = cdk.Fn.select(2, cdk.Fn.split("/", props.httpApi.apiEndpoint));
+    const apiOrigin = new origins.HttpOrigin(apiHost, {
+      protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+    });
+
+    // Strip the "/api" prefix before forwarding to the API (FastAPI routes live
+    // at root). Keeps the SPA and API same-origin so httpOnly cookies work
+    // without third-party-cookie restrictions.
+    const stripApi = new cloudfront.Function(this, "StripApiPrefix", {
+      code: cloudfront.FunctionCode.fromInline(
+        `function handler(event) {
+  var r = event.request;
+  r.uri = r.uri.replace(/^\\/api/, '');
+  if (r.uri === '') { r.uri = '/'; }
+  return r;
+}`
+      ),
+    });
+
+    // SPA routing: extensionless paths (client-side routes like /lenses) serve
+    // index.html. Real files (.js/.css/.json) pass through. Done as a function
+    // rather than distribution error responses so API 4xx responses are not
+    // rewritten.
+    const spaRouter = new cloudfront.Function(this, "SpaRouter", {
+      code: cloudfront.FunctionCode.fromInline(
+        `function handler(event) {
+  var r = event.request;
+  if (r.uri.indexOf('.') === -1) { r.uri = '/index.html'; }
+  return r;
+}`
+      ),
+    });
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        functionAssociations: [
+          { function: spaRouter, eventType: cloudfront.FunctionEventType.VIEWER_REQUEST },
+        ],
       },
-      // SPA fallback: client-side routes resolve to index.html.
-      errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: "/index.html" },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: "/index.html" },
-      ],
+      additionalBehaviors: {
+        "/api/*": {
+          origin: apiOrigin,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          // Forward everything except Host (origin must see its own host) so
+          // cookies and bodies reach the Lambda.
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          functionAssociations: [
+            { function: stripApi, eventType: cloudfront.FunctionEventType.VIEWER_REQUEST },
+          ],
+        },
+      },
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
 

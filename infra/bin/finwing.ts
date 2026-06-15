@@ -9,7 +9,7 @@ import { FrontendStack } from "../lib/frontend-stack";
 const app = new cdk.App();
 const env = app.node.tryGetContext("env") ?? "beta";
 const account = process.env.CDK_DEFAULT_ACCOUNT;
-const region = process.env.CDK_DEFAULT_REGION ?? "us-east-1";
+const region = process.env.CDK_DEFAULT_REGION ?? "us-west-2";
 const cdkEnv = { account, region };
 
 // Production domain config is only applied when env=prod and a hosted zone exists.
@@ -20,7 +20,7 @@ const foundation = new FoundationStack(app, `FinWing-Foundation-${env}`, {
   envName: env,
 });
 
-new ApiStack(app, `FinWing-Api-${env}`, {
+const apiStack = new ApiStack(app, `FinWing-Api-${env}`, {
   env: cdkEnv,
   envName: env,
   appTable: foundation.appTable,
@@ -42,6 +42,7 @@ new FrontendStack(app, `FinWing-Frontend-${env}`, {
   env: cdkEnv,
   envName: env,
   domainName,
+  httpApi: apiStack.httpApi,
 });
 
 app.synth();

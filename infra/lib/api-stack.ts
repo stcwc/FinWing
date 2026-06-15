@@ -17,6 +17,8 @@ interface Props extends cdk.StackProps {
 }
 
 export class ApiStack extends cdk.Stack {
+  readonly httpApi: apigw.HttpApi;
+
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
     const { envName, appTable, contentTable, userPool, userPoolClient } = props;
@@ -74,6 +76,7 @@ export class ApiStack extends cdk.Stack {
         allowCredentials: true,
       },
     });
+    this.httpApi = httpApi;
 
     httpApi.addRoutes({
       path: "/{proxy+}",
