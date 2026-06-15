@@ -11,6 +11,7 @@ Usage: python seed_taxonomy.py --table finwing-content-beta [--static-out DIR]
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,7 +53,10 @@ def needs_embed(existing: dict | None, topic: dict, model_version: str) -> bool:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--table", required=True)
-    parser.add_argument("--region", default="us-east-1")
+    parser.add_argument(
+        "--region",
+        default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-west-2",
+    )
     parser.add_argument("--static-out", default=None,
                         help="Directory to write taxonomy.json/assets.json for the SPA")
     args = parser.parse_args()

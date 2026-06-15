@@ -7,6 +7,7 @@ Usage: python backfill_topic.py --table finwing-content-beta --topic theme-ai --
 """
 
 import argparse
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -22,7 +23,10 @@ def main():
     parser.add_argument("--table", required=True)
     parser.add_argument("--topic", required=True)
     parser.add_argument("--days", type=int, default=14)
-    parser.add_argument("--region", default="us-east-1")
+    parser.add_argument(
+        "--region",
+        default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-west-2",
+    )
     args = parser.parse_args()
 
     table = boto3.resource("dynamodb", region_name=args.region).Table(args.table)

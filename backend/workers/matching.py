@@ -30,9 +30,19 @@ _sqs = None
 def get_model():
     global _model
     if _model is None:
+        import os
+        import shutil
+
         from fastembed import TextEmbedding
 
-        _model = TextEmbedding("BAAI/bge-small-en-v1.5")
+        # The image bakes the model into /opt (FINWING_MODEL_CACHE). Lambda's
+        # /tmp is empty at runtime and writable, while /opt is read-only — copy
+        # the baked cache to /tmp once so fastembed loads offline (no HF fetch).
+        baked = os.environ.get("FINWING_MODEL_CACHE")
+        cache_dir = "/tmp/fastembed_cache"
+        if baked and os.path.isdir(baked) and not os.path.isdir(cache_dir):
+            shutil.copytree(baked, cache_dir)
+        _model = TextEmbedding("BAAI/bge-small-en-v1.5", cache_dir=cache_dir)
     return _model
 
 

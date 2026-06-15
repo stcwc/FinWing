@@ -66,6 +66,8 @@ export class PipelineStack extends cdk.Stack {
       code: matchingImage(["workers.matching.handler"]),
       memorySize: 1024,
       timeout: cdk.Duration.seconds(60),
+      // Room to copy the baked embedding-model cache from /opt to /tmp.
+      ephemeralStorageSize: cdk.Size.mebibytes(1024),
       logRetention: logs.RetentionDays.TWO_WEEKS,
       environment: baseEnv,
     });
