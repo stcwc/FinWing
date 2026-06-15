@@ -1,0 +1,70 @@
+# News feed sources, tiered per HLD Appendix A. Seeded into SSM Parameter
+# Store at deploy; the ingestion worker reads them from there (with mutable
+# etag/lastModified state kept in DynamoDB, not here).
+
+sources:
+  # ── Tier 1: primary / authoritative ────────────────────────────
+  - id: fed-press
+    type: rss
+    tier: 1
+    url: https://www.federalreserve.gov/feeds/press_all.xml
+  - id: ecb-press
+    type: rss
+    tier: 1
+    url: https://www.ecb.europa.eu/rss/press.html
+  - id: bls-releases
+    type: rss
+    tier: 1
+    url: https://www.bls.gov/feed/news_release.rss
+  - id: sec-press
+    type: rss
+    tier: 1
+    url: https://www.sec.gov/news/pressreleases.rss
+
+  # ── Tier 2: structured news APIs (entity-tagged) ───────────────
+  - id: finnhub-general
+    type: finnhub
+    tier: 2
+    category: general
+  - id: finnhub-forex
+    type: finnhub
+    tier: 2
+    category: forex
+  - id: finnhub-crypto
+    type: finnhub
+    tier: 2
+    category: crypto
+  - id: finnhub-merger
+    type: finnhub
+    tier: 2
+    category: merger
+
+  # ── Tier 3: breadth / discovery ────────────────────────────────
+  - id: cnbc-markets
+    type: rss
+    tier: 3
+    url: https://www.cnbc.com/id/20910258/device/rss/rss.html
+  - id: cnbc-economy
+    type: rss
+    tier: 3
+    url: https://www.cnbc.com/id/20910255/device/rss/rss.html
+  - id: marketwatch-top
+    type: rss
+    tier: 3
+    url: https://feeds.content.dowjones.io/public/rss/mw_topstories
+  - id: coindesk
+    type: rss
+    tier: 3
+    url: https://www.coindesk.com/arc/outboundfeeds/rss/
+  - id: cointelegraph
+    type: rss
+    tier: 3
+    url: https://cointelegraph.com/rss
+  - id: oilprice
+    type: rss
+    tier: 3
+    url: https://oilprice.com/rss/main
+  - id: kitco
+    type: rss
+    tier: 3
+    url: https://www.kitco.com/rss/category/commentaries.xml

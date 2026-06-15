@@ -1,0 +1,4 @@
+# Extra deps for the matching worker container image (in addition to
+# ../requirements.txt). fastembed bundles the ONNX runtime.
+numpy~=2.1
+fastembed~=0.4

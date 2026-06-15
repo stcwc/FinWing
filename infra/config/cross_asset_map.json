@@ -1,0 +1,83 @@
+{
+  "boj_rate_hike": {
+    "strengthens": ["JPY"],
+    "weakens": ["USD/JPY carry trades", "JGB prices"],
+    "mechanism": "Yen carry unwind; US-Japan rate differential narrows"
+  },
+  "fed_rate_cut": {
+    "strengthens": ["Gold", "EM FX", "Bitcoin", "Equities", "Bonds"],
+    "weakens": ["USD"],
+    "mechanism": "Lower real rates reduce dollar attractiveness; risk-on; duration rallies"
+  },
+  "fed_rate_hike": {
+    "strengthens": ["USD", "Treasury yields"],
+    "weakens": ["Gold", "Growth stocks", "EM FX", "Bonds"],
+    "mechanism": "Higher rates increase dollar attractiveness; discount rates pressure long-duration assets"
+  },
+  "us_cpi_beat": {
+    "strengthens": ["USD", "Treasury yields"],
+    "weakens": ["Bonds", "Gold", "Growth stocks"],
+    "mechanism": "Inflation persistence delays Fed cuts; rate expectations reprice higher"
+  },
+  "us_cpi_miss": {
+    "strengthens": ["Gold", "Bonds", "Equities"],
+    "weakens": ["USD"],
+    "mechanism": "Disinflation supports rate-cut expectations; real yields fall"
+  },
+  "strong_nfp": {
+    "strengthens": ["USD", "Treasury yields"],
+    "weakens": ["Bonds", "Gold"],
+    "mechanism": "Labor strength reduces urgency for Fed easing"
+  },
+  "weak_nfp": {
+    "strengthens": ["Bonds", "Gold"],
+    "weakens": ["USD", "Cyclical equities"],
+    "mechanism": "Labor weakness raises cut expectations but also growth concerns"
+  },
+  "risk_off": {
+    "strengthens": ["Gold", "USD", "JPY", "CHF", "US Treasuries"],
+    "weakens": ["Equities", "High yield bonds", "EM FX", "Bitcoin", "Commodity currencies"],
+    "mechanism": "Safe-haven flows; deleveraging of risk positions"
+  },
+  "oil_spike": {
+    "strengthens": ["CAD", "NOK", "Energy stocks", "Inflation expectations"],
+    "weakens": ["Airlines", "Consumer discretionary", "Oil-importing EM"],
+    "mechanism": "Oil-linked currencies and producers benefit; inflation passthrough pressures consumers"
+  },
+  "china_slowdown": {
+    "strengthens": ["USD", "US Treasuries"],
+    "weakens": ["AUD", "Copper", "Iron ore", "EM FX", "Luxury goods stocks"],
+    "mechanism": "China is the marginal demand driver for industrial metals and commodity FX"
+  },
+  "china_stimulus": {
+    "strengthens": ["Copper", "AUD", "China equities", "Industrial metals", "EM FX"],
+    "weakens": [],
+    "mechanism": "Stimulus revives construction and manufacturing demand expectations"
+  },
+  "dollar_strength": {
+    "strengthens": ["USD"],
+    "weakens": ["Gold", "EM debt", "Commodities", "US multinationals' earnings"],
+    "mechanism": "Dollar-denominated commodities become more expensive in local currencies; EM dollar debt burden rises"
+  },
+  "yield_curve_inversion": {
+    "signals": "Recession risk priced in",
+    "strengthens": ["Long-duration Treasuries", "Gold", "Defensive sectors"],
+    "weakens": ["Financials", "EM FX", "Cyclicals"],
+    "mechanism": "Banks' net interest margins compress; growth expectations deteriorate"
+  },
+  "geopolitical_escalation_mideast": {
+    "strengthens": ["Oil", "Gold", "USD", "Defense stocks"],
+    "weakens": ["Equities broadly", "Airlines", "Regional EM assets"],
+    "mechanism": "Supply disruption risk premium in oil; safe-haven demand"
+  },
+  "ai_capex_acceleration": {
+    "strengthens": ["Semiconductors", "Data center REITs", "Utilities", "Uranium", "Copper"],
+    "weakens": [],
+    "mechanism": "Hyperscaler capital expenditure flows to chips, power, and data center construction"
+  },
+  "crypto_regulation_clarity": {
+    "strengthens": ["Bitcoin", "Ethereum", "Crypto-exposed equities", "Stablecoins"],
+    "weakens": [],
+    "mechanism": "Regulatory certainty unlocks institutional allocation"
+  }
+}

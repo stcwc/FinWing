@@ -1,0 +1,1460 @@
+# FinWing topic taxonomy — source of truth (LLD §8).
+# topicId is stable and immutable; never reuse IDs. Removing a topic here
+# deprecates it (soft) on the next seed run.
+#
+# matchMode:
+#   exact-symbol  — alias must appear as a standalone token (tickers)
+#   phrase        — alias substring + optional qualifiers, minus negativeTerms
+#   semantic-only — embedding similarity only (ambiguous aliases)
+
+version: 1
+embeddingModelVersion: "bge-small-en-v1.5"
+
+topics:
+  # ── 1. Equities: Individual Stocks ─────────────────────────────
+  - topicId: eq-stocks-nvda
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: NVIDIA
+    aliases: [NVDA, NVIDIA, Nvidia]
+    matchMode: exact-symbol
+    embeddingText: >
+      NVIDIA Corporation (NASDAQ: NVDA), semiconductor company specializing in
+      GPUs, AI accelerators, and data center computing infrastructure.
+    assetIds: [NVDA]
+    status: active
+
+  - topicId: eq-stocks-msft
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Microsoft
+    aliases: [MSFT, Microsoft]
+    matchMode: exact-symbol
+    embeddingText: >
+      Microsoft Corporation (NASDAQ: MSFT), software, Azure cloud computing,
+      Office productivity, gaming, and AI services company.
+    assetIds: [MSFT]
+    status: active
+
+  - topicId: eq-stocks-amzn
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Amazon
+    aliases: [AMZN, Amazon, Amazon.com]
+    matchMode: exact-symbol
+    embeddingText: >
+      Amazon.com Inc (NASDAQ: AMZN), e-commerce, AWS cloud computing,
+      logistics, advertising, and consumer devices company.
+    assetIds: [AMZN]
+    status: active
+
+  - topicId: eq-stocks-goog
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Alphabet (Google)
+    aliases: [GOOG, GOOGL, Alphabet, Google]
+    matchMode: exact-symbol
+    embeddingText: >
+      Alphabet Inc (NASDAQ: GOOG), Google search, advertising, YouTube,
+      Google Cloud, Android, and AI research (DeepMind, Gemini).
+    assetIds: [GOOG]
+    status: active
+
+  - topicId: eq-stocks-meta
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Meta
+    aliases: [META, Meta Platforms, Facebook, Instagram]
+    matchMode: exact-symbol
+    embeddingText: >
+      Meta Platforms Inc (NASDAQ: META), social media company operating
+      Facebook, Instagram, WhatsApp, plus AI and metaverse investments.
+    assetIds: [META]
+    status: active
+
+  - topicId: eq-stocks-tsla
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Tesla
+    aliases: [TSLA, Tesla]
+    matchMode: exact-symbol
+    embeddingText: >
+      Tesla Inc (NASDAQ: TSLA), electric vehicles, energy storage, solar,
+      autonomous driving, and robotics company led by Elon Musk.
+    assetIds: [TSLA]
+    status: active
+
+  - topicId: eq-stocks-aapl
+    category: Equities
+    subgroup: Individual Stocks
+    displayName: Apple
+    aliases: [AAPL, Apple, iPhone]
+    matchMode: exact-symbol
+    negativeTerms: [apple pie, apple juice, apple orchard]
+    embeddingText: >
+      Apple Inc (NASDAQ: AAPL), consumer electronics maker of iPhone, Mac,
+      iPad, services, and wearables.
+    assetIds: [AAPL]
+    status: active
+
+  # ── 1. Equities: Indices ───────────────────────────────────────
+  - topicId: eq-index-spx
+    category: Equities
+    subgroup: Equity Indices
+    displayName: S&P 500
+    aliases: [S&P 500, S&P500, SPX, SPY]
+    matchMode: phrase
+    embeddingText: >
+      S&P 500 index of large-cap US stocks, broad US equity market benchmark,
+      market rally or selloff, index levels and records.
+    assetIds: [SPX]
+    status: active
+
+  - topicId: eq-index-ndx
+    category: Equities
+    subgroup: Equity Indices
+    displayName: Nasdaq 100
+    aliases: [Nasdaq 100, Nasdaq-100, NDX, QQQ, Nasdaq]
+    matchMode: phrase
+    embeddingText: >
+      Nasdaq 100 index of large-cap technology stocks, tech-heavy US equity
+      benchmark, growth stock performance.
+    assetIds: [NDX]
+    status: active
+
+  - topicId: eq-index-dji
+    category: Equities
+    subgroup: Equity Indices
+    displayName: Dow Jones
+    aliases: [Dow Jones, Dow, DJIA]
+    matchMode: phrase
+    embeddingText: >
+      Dow Jones Industrial Average, 30 blue-chip US stocks index, traditional
+      US equity market benchmark.
+    assetIds: [DJI]
+    status: active
+
+  - topicId: eq-index-rut
+    category: Equities
+    subgroup: Equity Indices
+    displayName: Russell 2000
+    aliases: [Russell 2000, Russell2000, RUT, IWM, small caps, small-cap]
+    matchMode: phrase
+    embeddingText: >
+      Russell 2000 index of US small-cap stocks, small-cap equity performance
+      and breadth of the US market.
+    assetIds: [RUT]
+    status: active
+
+  # ── 1. Equities: Sectors / Themes ──────────────────────────────
+  - topicId: theme-ai
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: AI
+    aliases: [artificial intelligence, generative AI, large language model, LLM, AI chips, foundation model]
+    matchMode: semantic-only
+    embeddingText: >
+      Artificial intelligence industry, machine learning, large language
+      models, generative AI products, AI chips and accelerators, AI
+      infrastructure capital expenditure, foundation models.
+    assetIds: [NVDA, MSFT, GOOG, META]
+    status: active
+
+  - topicId: theme-semis
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Semiconductors
+    aliases: [semiconductor, chipmaker, chip maker, foundry, TSMC, ASML, chip stocks]
+    matchMode: phrase
+    embeddingText: >
+      Semiconductor industry, chip manufacturing, foundries like TSMC,
+      lithography equipment, memory chips, GPU and CPU supply chains,
+      chip export controls.
+    assetIds: [NVDA, SOXX]
+    status: active
+
+  - topicId: theme-cloud
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Cloud Computing
+    aliases: [cloud computing, AWS, Azure, Google Cloud, hyperscaler, data center]
+    matchMode: phrase
+    embeddingText: >
+      Cloud computing industry, hyperscalers AWS Azure and Google Cloud,
+      data center construction and demand, enterprise cloud spending, SaaS.
+    assetIds: [MSFT, AMZN, GOOG]
+    status: active
+
+  - topicId: theme-cyber
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Cybersecurity
+    aliases: [cybersecurity, cyber attack, cyberattack, ransomware, data breach, hacking]
+    matchMode: phrase
+    embeddingText: >
+      Cybersecurity industry, cyber attacks and ransomware incidents, data
+      breaches, security software vendors, zero-day vulnerabilities,
+      nation-state hacking.
+    assetIds: []
+    status: active
+
+  - topicId: theme-healthcare
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Healthcare
+    aliases: [healthcare, pharma, pharmaceutical, biotech, FDA approval, drug trial]
+    matchMode: phrase
+    embeddingText: >
+      Healthcare and pharmaceutical industry, biotech drug development, FDA
+      approvals, clinical trials, health insurers, medical devices.
+    assetIds: [XLV]
+    status: active
+
+  - topicId: theme-defense
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Defense
+    aliases: [defense industry, defense contractor, military spending, defense budget, Lockheed, Raytheon]
+    matchMode: phrase
+    negativeTerms: [defense attorney, defense lawyer, self-defense]
+    embeddingText: >
+      Defense industry, military spending and procurement, defense
+      contractors, NATO budgets, weapons programs, geopolitical conflict
+      driving defense demand.
+    assetIds: [ITA]
+    status: active
+
+  - topicId: theme-financials
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Financials
+    aliases: [bank earnings, banking sector, financial sector, JPMorgan, Goldman Sachs, bank stocks]
+    matchMode: phrase
+    embeddingText: >
+      Financial sector, large banks, bank earnings, net interest margins,
+      lending conditions, investment banking, regional banks, insurance.
+    assetIds: [XLF]
+    status: active
+
+  - topicId: theme-utilities
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Utilities
+    aliases: [utilities sector, utility stocks, electric utility, power grid]
+    matchMode: phrase
+    embeddingText: >
+      Utilities sector, electric and gas utilities, power grid investment,
+      electricity demand from data centers, regulated returns, dividend
+      yield plays.
+    assetIds: [XLU]
+    status: active
+
+  - topicId: theme-staples
+    category: Equities
+    subgroup: Sectors / Themes
+    displayName: Consumer Staples
+    aliases: [consumer staples, packaged food, household products, Procter & Gamble, Coca-Cola]
+    matchMode: phrase
+    embeddingText: >
+      Consumer staples sector, packaged food and beverage companies,
+      household products, defensive stocks, consumer demand resilience.
+    assetIds: [XLP]
+    status: active
+
+  # ── 2. Fixed Income: Government Bonds ──────────────────────────
+  - topicId: bond-us2y
+    category: Fixed Income
+    subgroup: Government Bonds
+    displayName: US 2Y Treasury
+    aliases: [2-year Treasury, two-year Treasury, 2Y yield, 2-year yield]
+    matchMode: phrase
+    embeddingText: >
+      US 2-year Treasury note, short-end yields, rate expectations priced
+      into front-end government bonds, policy-sensitive Treasury maturity.
+    assetIds: [US2Y]
+    status: active
+
+  - topicId: bond-us10y
+    category: Fixed Income
+    subgroup: Government Bonds
+    displayName: US 10Y Treasury
+    aliases: [10-year Treasury, ten-year Treasury, 10Y yield, 10-year yield, benchmark Treasury]
+    matchMode: phrase
+    embeddingText: >
+      US 10-year Treasury note, benchmark long-term yield, mortgage rate
+      anchor, term premium, bond market selloff or rally.
+    assetIds: [US10Y]
+    status: active
+
+  - topicId: bond-us30y
+    category: Fixed Income
+    subgroup: Government Bonds
+    displayName: US 30Y Treasury
+    aliases: [30-year Treasury, thirty-year Treasury, 30Y yield, long bond]
+    matchMode: phrase
+    embeddingText: >
+      US 30-year Treasury bond, ultra-long duration, long bond auctions,
+      fiscal deficit concerns priced into long-end yields.
+    assetIds: [US30Y]
+    status: active
+
+  - topicId: bond-bund
+    category: Fixed Income
+    subgroup: Government Bonds
+    displayName: German Bund
+    aliases: [German Bund, Bund yield, German 10-year]
+    matchMode: phrase
+    embeddingText: >
+      German Bund government bonds, euro area benchmark yields, ECB policy
+      transmission, European sovereign debt.
+    assetIds: []
+    status: active
+
+  - topicId: bond-jgb
+    category: Fixed Income
+    subgroup: Government Bonds
+    displayName: Japanese Government Bond
+    aliases: [JGB, Japanese government bond, Japan 10-year, BoJ yield curve control]
+    matchMode: phrase
+    embeddingText: >
+      Japanese Government Bonds, JGB yields, Bank of Japan yield curve
+      control, Japanese rate normalization, yen carry trade funding.
+    assetIds: []
+    status: active
+
+  # ── 2. Fixed Income: Credit ────────────────────────────────────
+  - topicId: bond-ig
+    category: Fixed Income
+    subgroup: Credit
+    displayName: Investment Grade Credit
+    aliases: [investment grade, IG credit, corporate bond spread, credit spreads]
+    matchMode: phrase
+    embeddingText: >
+      Investment grade corporate bonds, credit spreads, corporate debt
+      issuance, IG bond funds, corporate borrowing costs.
+    assetIds: [LQD]
+    status: active
+
+  - topicId: bond-hy
+    category: Fixed Income
+    subgroup: Credit
+    displayName: High Yield
+    aliases: [high yield, junk bond, high-yield spread, HY credit]
+    matchMode: phrase
+    embeddingText: >
+      High yield junk bonds, HY credit spreads, default rates, risk appetite
+      in credit markets, leveraged loans.
+    assetIds: [HYG]
+    status: active
+
+  - topicId: bond-muni
+    category: Fixed Income
+    subgroup: Credit
+    displayName: Municipal Bonds
+    aliases: [municipal bond, muni bond, munis, tax-exempt bond]
+    matchMode: phrase
+    embeddingText: >
+      Municipal bonds, tax-exempt debt issued by US states and cities, muni
+      yields and credit quality, state budgets.
+    assetIds: []
+    status: active
+
+  # ── 2. Fixed Income: Bond ETFs ─────────────────────────────────
+  - topicId: bond-etf-tlt
+    category: Fixed Income
+    subgroup: Bond ETFs
+    displayName: TLT
+    aliases: [TLT]
+    matchMode: exact-symbol
+    embeddingText: >
+      iShares 20+ Year Treasury Bond ETF (TLT), long-duration Treasury
+      exposure, rate-sensitive bond fund flows.
+    assetIds: [TLT]
+    status: active
+
+  - topicId: bond-etf-ief
+    category: Fixed Income
+    subgroup: Bond ETFs
+    displayName: IEF
+    aliases: [IEF]
+    matchMode: exact-symbol
+    embeddingText: >
+      iShares 7-10 Year Treasury Bond ETF (IEF), intermediate Treasury
+      exposure, core bond allocation.
+    assetIds: [IEF]
+    status: active
+
+  - topicId: bond-etf-hyg
+    category: Fixed Income
+    subgroup: Bond ETFs
+    displayName: HYG
+    aliases: [HYG]
+    matchMode: exact-symbol
+    embeddingText: >
+      iShares iBoxx High Yield Corporate Bond ETF (HYG), junk bond fund,
+      credit risk appetite gauge.
+    assetIds: [HYG]
+    status: active
+
+  - topicId: bond-etf-lqd
+    category: Fixed Income
+    subgroup: Bond ETFs
+    displayName: LQD
+    aliases: [LQD]
+    matchMode: exact-symbol
+    embeddingText: >
+      iShares iBoxx Investment Grade Corporate Bond ETF (LQD), IG corporate
+      credit fund flows.
+    assetIds: [LQD]
+    status: active
+
+  # ── 3. Commodities: Precious Metals ────────────────────────────
+  - topicId: cmd-gold
+    category: Commodities
+    subgroup: Precious Metals
+    displayName: Gold
+    aliases: [gold price, gold futures, bullion, XAU, gold rally]
+    matchMode: phrase
+    negativeTerms: [gold medal, golden gate, gold record]
+    embeddingText: >
+      Gold price and bullion markets, safe-haven demand, central bank gold
+      buying, real rates and dollar impact on gold, gold futures and ETFs.
+    assetIds: [XAUUSD]
+    status: active
+
+  - topicId: cmd-silver
+    category: Commodities
+    subgroup: Precious Metals
+    displayName: Silver
+    aliases: [silver price, silver futures, XAG]
+    matchMode: phrase
+    embeddingText: >
+      Silver price, industrial and monetary demand for silver, solar panel
+      silver consumption, gold-silver ratio.
+    assetIds: [XAGUSD]
+    status: active
+
+  - topicId: cmd-platinum
+    category: Commodities
+    subgroup: Precious Metals
+    displayName: Platinum
+    aliases: [platinum price, platinum futures]
+    matchMode: phrase
+    embeddingText: >
+      Platinum price, autocatalyst demand, South African platinum mining
+      supply, platinum group metals.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-palladium
+    category: Commodities
+    subgroup: Precious Metals
+    displayName: Palladium
+    aliases: [palladium price, palladium futures]
+    matchMode: phrase
+    embeddingText: >
+      Palladium price, gasoline engine catalytic converter demand, Russian
+      palladium supply, PGM markets.
+    assetIds: []
+    status: active
+
+  # ── 3. Commodities: Industrial Metals ──────────────────────────
+  - topicId: cmd-copper
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Copper
+    aliases: [copper price, copper futures, copper mine, Dr. Copper]
+    matchMode: phrase
+    embeddingText: >
+      Copper price and futures, global industrial demand, China construction
+      and grid demand, copper mining supply, electrification demand.
+    assetIds: [COPPER]
+    status: active
+
+  - topicId: cmd-aluminum
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Aluminum
+    aliases: [aluminum price, aluminium price, aluminum smelter]
+    matchMode: phrase
+    embeddingText: >
+      Aluminum price, smelting energy costs, Chinese aluminum production,
+      tariffs on aluminum imports, LME aluminum.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-nickel
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Nickel
+    aliases: [nickel price, nickel futures, nickel mine]
+    matchMode: phrase
+    embeddingText: >
+      Nickel price, stainless steel and EV battery demand, Indonesian nickel
+      supply, LME nickel trading.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-zinc
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Zinc
+    aliases: [zinc price, zinc futures]
+    matchMode: phrase
+    embeddingText: >
+      Zinc price, galvanizing demand for steel, zinc smelter output, LME
+      zinc inventories.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-tin
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Tin
+    aliases: [tin price, tin futures, tin mine]
+    matchMode: phrase
+    embeddingText: >
+      Tin price, solder demand from electronics, Myanmar and Indonesia tin
+      supply, LME tin market.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-lithium
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Lithium
+    aliases: [lithium price, lithium carbonate, lithium mine, spodumene]
+    matchMode: phrase
+    embeddingText: >
+      Lithium price, EV battery raw material demand, lithium carbonate and
+      hydroxide, Chilean and Australian lithium supply.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-uranium
+    category: Commodities
+    subgroup: Industrial Metals
+    displayName: Uranium
+    aliases: [uranium price, uranium spot, nuclear fuel, enriched uranium]
+    matchMode: phrase
+    embeddingText: >
+      Uranium price and spot market, nuclear power fuel demand, Kazakhstan
+      uranium supply, nuclear reactor restarts and new builds.
+    assetIds: []
+    status: active
+
+  # ── 3. Commodities: Energy ─────────────────────────────────────
+  - topicId: cmd-wti
+    category: Commodities
+    subgroup: Energy
+    displayName: WTI Crude Oil
+    aliases: [WTI, crude oil, oil price, oil futures, OPEC]
+    matchMode: phrase
+    embeddingText: >
+      WTI crude oil price, US oil benchmark, OPEC+ production decisions, oil
+      inventories, energy market supply and demand.
+    assetIds: [WTI]
+    status: active
+
+  - topicId: cmd-brent
+    category: Commodities
+    subgroup: Energy
+    displayName: Brent Crude
+    aliases: [Brent, Brent crude]
+    matchMode: phrase
+    embeddingText: >
+      Brent crude oil price, international oil benchmark, North Sea crude,
+      global oil trade pricing.
+    assetIds: [BRENT]
+    status: active
+
+  - topicId: cmd-natgas
+    category: Commodities
+    subgroup: Energy
+    displayName: Natural Gas
+    aliases: [natural gas, natgas, LNG, Henry Hub, gas price]
+    matchMode: phrase
+    embeddingText: >
+      Natural gas prices, Henry Hub futures, LNG exports, European gas
+      supply, heating and power generation demand.
+    assetIds: [NATGAS]
+    status: active
+
+  - topicId: cmd-coal
+    category: Commodities
+    subgroup: Energy
+    displayName: Coal
+    aliases: [coal price, thermal coal, coking coal, coal mine]
+    matchMode: phrase
+    embeddingText: >
+      Coal prices, thermal coal for power generation, coking coal for steel,
+      Chinese and Indian coal demand, coal phase-out policy.
+    assetIds: []
+    status: active
+
+  # ── 3. Commodities: Agriculture ────────────────────────────────
+  - topicId: cmd-corn
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Corn
+    aliases: [corn futures, corn price, corn crop, corn harvest]
+    matchMode: phrase
+    embeddingText: >
+      Corn futures and prices, US Midwest crop conditions, ethanol demand,
+      grain exports, USDA crop reports.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-wheat
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Wheat
+    aliases: [wheat futures, wheat price, wheat crop, wheat harvest]
+    matchMode: phrase
+    embeddingText: >
+      Wheat futures and prices, Black Sea wheat exports, global food supply,
+      drought impact on wheat crops.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-soybeans
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Soybeans
+    aliases: [soybean futures, soybean price, soybean crop, soybeans]
+    matchMode: phrase
+    embeddingText: >
+      Soybean futures and prices, Chinese soybean imports, Brazilian and US
+      soybean harvests, crush demand.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-coffee
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Coffee
+    aliases: [coffee futures, coffee price, arabica, robusta]
+    matchMode: phrase
+    embeddingText: >
+      Coffee futures, arabica and robusta prices, Brazilian and Vietnamese
+      coffee harvests, frost and drought impact.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-cocoa
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Cocoa
+    aliases: [cocoa futures, cocoa price, cocoa crop]
+    matchMode: phrase
+    embeddingText: >
+      Cocoa futures and prices, West African cocoa supply from Ivory Coast
+      and Ghana, chocolate demand.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-cotton
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Cotton
+    aliases: [cotton futures, cotton price, cotton crop]
+    matchMode: phrase
+    embeddingText: >
+      Cotton futures and prices, textile demand, US and Indian cotton crops,
+      apparel industry input costs.
+    assetIds: []
+    status: active
+
+  - topicId: cmd-sugar
+    category: Commodities
+    subgroup: Agriculture
+    displayName: Sugar
+    aliases: [sugar futures, sugar price, sugar cane]
+    matchMode: phrase
+    embeddingText: >
+      Sugar futures and prices, Brazilian and Indian sugar production,
+      ethanol diversion, global sweetener demand.
+    assetIds: []
+    status: active
+
+  # ── 4. FX: Major Pairs ─────────────────────────────────────────
+  - topicId: fx-usdjpy
+    category: Foreign Exchange
+    subgroup: Major Pairs
+    displayName: USD/JPY
+    aliases: [USD/JPY, USDJPY, dollar-yen]
+    matchMode: phrase
+    embeddingText: >
+      USD/JPY exchange rate, dollar-yen pair, US-Japan rate differential,
+      yen carry trade, Japanese FX intervention.
+    assetIds: [USDJPY]
+    status: active
+
+  - topicId: fx-eurusd
+    category: Foreign Exchange
+    subgroup: Major Pairs
+    displayName: EUR/USD
+    aliases: [EUR/USD, EURUSD, euro-dollar]
+    matchMode: phrase
+    embeddingText: >
+      EUR/USD exchange rate, euro-dollar pair, ECB versus Fed policy
+      divergence, euro area growth differential.
+    assetIds: [EURUSD]
+    status: active
+
+  - topicId: fx-gbpusd
+    category: Foreign Exchange
+    subgroup: Major Pairs
+    displayName: GBP/USD
+    aliases: [GBP/USD, GBPUSD, cable, pound-dollar]
+    matchMode: phrase
+    embeddingText: >
+      GBP/USD exchange rate, sterling-dollar pair known as cable, Bank of
+      England policy, UK economic data impact on the pound.
+    assetIds: [GBPUSD]
+    status: active
+
+  - topicId: fx-usdchf
+    category: Foreign Exchange
+    subgroup: Major Pairs
+    displayName: USD/CHF
+    aliases: [USD/CHF, USDCHF, Swiss franc]
+    matchMode: phrase
+    embeddingText: >
+      USD/CHF exchange rate, Swiss franc safe-haven flows, Swiss National
+      Bank policy and intervention.
+    assetIds: [USDCHF]
+    status: active
+
+  # ── 4. FX: Commodity Currencies ────────────────────────────────
+  - topicId: fx-audusd
+    category: Foreign Exchange
+    subgroup: Commodity Currencies
+    displayName: AUD/USD
+    aliases: [AUD/USD, AUDUSD, Australian dollar, Aussie dollar]
+    matchMode: phrase
+    embeddingText: >
+      AUD/USD exchange rate, Australian dollar, RBA policy, iron ore and
+      China demand impact on the Aussie.
+    assetIds: [AUDUSD]
+    status: active
+
+  - topicId: fx-nzdusd
+    category: Foreign Exchange
+    subgroup: Commodity Currencies
+    displayName: NZD/USD
+    aliases: [NZD/USD, NZDUSD, New Zealand dollar, kiwi dollar]
+    matchMode: phrase
+    embeddingText: >
+      NZD/USD exchange rate, New Zealand dollar, RBNZ policy, dairy exports
+      and the kiwi.
+    assetIds: [NZDUSD]
+    status: active
+
+  - topicId: fx-usdcad
+    category: Foreign Exchange
+    subgroup: Commodity Currencies
+    displayName: USD/CAD
+    aliases: [USD/CAD, USDCAD, Canadian dollar, loonie]
+    matchMode: phrase
+    embeddingText: >
+      USD/CAD exchange rate, Canadian dollar, Bank of Canada policy, oil
+      price impact on the loonie.
+    assetIds: [USDCAD]
+    status: active
+
+  # ── 4. FX: Emerging Market ─────────────────────────────────────
+  - topicId: fx-usdcny
+    category: Foreign Exchange
+    subgroup: Emerging Market FX
+    displayName: USD/CNY
+    aliases: [USD/CNY, USDCNY, yuan exchange rate, renminbi rate]
+    matchMode: phrase
+    embeddingText: >
+      USD/CNY exchange rate, Chinese yuan renminbi, PBoC fixing, capital
+      flows and yuan depreciation or appreciation pressure.
+    assetIds: [USDCNY]
+    status: active
+
+  - topicId: fx-usdinr
+    category: Foreign Exchange
+    subgroup: Emerging Market FX
+    displayName: USD/INR
+    aliases: [USD/INR, USDINR, Indian rupee]
+    matchMode: phrase
+    embeddingText: >
+      USD/INR exchange rate, Indian rupee, RBI intervention, Indian capital
+      flows and trade deficit impact.
+    assetIds: [USDINR]
+    status: active
+
+  - topicId: fx-usdbrl
+    category: Foreign Exchange
+    subgroup: Emerging Market FX
+    displayName: USD/BRL
+    aliases: [USD/BRL, USDBRL, Brazilian real]
+    matchMode: phrase
+    embeddingText: >
+      USD/BRL exchange rate, Brazilian real, Brazil central bank Selic rate,
+      commodity exports and fiscal policy impact on the real.
+    assetIds: [USDBRL]
+    status: active
+
+  - topicId: fx-usdmxn
+    category: Foreign Exchange
+    subgroup: Emerging Market FX
+    displayName: USD/MXN
+    aliases: [USD/MXN, USDMXN, Mexican peso]
+    matchMode: phrase
+    embeddingText: >
+      USD/MXN exchange rate, Mexican peso, Banxico policy, nearshoring and
+      remittances, US trade policy impact on the peso.
+    assetIds: [USDMXN]
+    status: active
+
+  # ── 4. FX: Currency Themes ─────────────────────────────────────
+  - topicId: fx-theme-usd
+    category: Foreign Exchange
+    subgroup: Currency Themes
+    displayName: US Dollar
+    aliases: [dollar index, DXY, dollar strength, dollar weakness, greenback]
+    matchMode: phrase
+    embeddingText: >
+      US dollar broad strength or weakness, DXY dollar index, dollar as
+      global reserve currency, Fed policy impact on the dollar.
+    assetIds: [DXY]
+    status: active
+
+  - topicId: fx-theme-jpy
+    category: Foreign Exchange
+    subgroup: Currency Themes
+    displayName: Japanese Yen
+    aliases: [Japanese yen, the yen, yen weakness, yen strength, yen intervention]
+    matchMode: phrase
+    embeddingText: >
+      Japanese yen broad moves, BoJ policy impact on the yen, carry trade
+      flows, Ministry of Finance FX intervention.
+    assetIds: [USDJPY]
+    status: active
+
+  - topicId: fx-theme-cny
+    category: Foreign Exchange
+    subgroup: Currency Themes
+    displayName: Chinese Yuan
+    aliases: [Chinese yuan, renminbi, RMB, yuan devaluation]
+    matchMode: phrase
+    embeddingText: >
+      Chinese yuan renminbi broad moves, PBoC currency management, yuan
+      internationalization, trade tension impact on the yuan.
+    assetIds: [USDCNY]
+    status: active
+
+  - topicId: fx-theme-eur
+    category: Foreign Exchange
+    subgroup: Currency Themes
+    displayName: Euro
+    aliases: [the euro, euro strength, euro weakness, single currency]
+    matchMode: phrase
+    embeddingText: >
+      Euro broad moves, ECB policy impact on the euro, euro area political
+      and fiscal developments, euro versus major currencies.
+    assetIds: [EURUSD]
+    status: active
+
+  # ── 5. Crypto ──────────────────────────────────────────────────
+  - topicId: crypto-btc
+    category: Cryptocurrencies
+    subgroup: Major
+    displayName: Bitcoin
+    aliases: [Bitcoin, BTC, bitcoin ETF, bitcoin halving]
+    matchMode: phrase
+    embeddingText: >
+      Bitcoin price and adoption, BTC spot ETFs, halving cycles, bitcoin as
+      digital gold, institutional bitcoin demand.
+    assetIds: [BTC]
+    status: active
+
+  - topicId: crypto-eth
+    category: Cryptocurrencies
+    subgroup: Major
+    displayName: Ethereum
+    aliases: [Ethereum, ETH, ether]
+    matchMode: phrase
+    embeddingText: >
+      Ethereum price and network activity, ETH staking, Ethereum upgrades,
+      smart contract platform competition, ETH ETFs.
+    assetIds: [ETH]
+    status: active
+
+  - topicId: crypto-sol
+    category: Cryptocurrencies
+    subgroup: Layer 1
+    displayName: Solana
+    aliases: [Solana, SOL]
+    matchMode: phrase
+    embeddingText: >
+      Solana blockchain, SOL token price, high-throughput Layer 1, Solana
+      DeFi and memecoin activity, network outages.
+    assetIds: [SOL]
+    status: active
+
+  - topicId: crypto-avax
+    category: Cryptocurrencies
+    subgroup: Layer 1
+    displayName: Avalanche
+    aliases: [Avalanche blockchain, AVAX]
+    matchMode: phrase
+    negativeTerms: [snow avalanche, avalanche warning, ski]
+    embeddingText: >
+      Avalanche blockchain platform, AVAX token, subnets, Layer 1 smart
+      contract competition.
+    assetIds: [AVAX]
+    status: active
+
+  - topicId: crypto-sui
+    category: Cryptocurrencies
+    subgroup: Layer 1
+    displayName: Sui
+    aliases: [Sui blockchain, SUI token]
+    matchMode: semantic-only
+    embeddingText: >
+      Sui blockchain, SUI cryptocurrency token, Move-language Layer 1 chain
+      from Mysten Labs.
+    assetIds: [SUI]
+    status: active
+
+  - topicId: crypto-usdt
+    category: Cryptocurrencies
+    subgroup: Stablecoins
+    displayName: USDT (Tether)
+    aliases: [Tether, USDT]
+    matchMode: phrase
+    embeddingText: >
+      Tether USDT stablecoin, reserves and attestations, stablecoin market
+      cap, USDT dominance in crypto trading.
+    assetIds: []
+    status: active
+
+  - topicId: crypto-usdc
+    category: Cryptocurrencies
+    subgroup: Stablecoins
+    displayName: USDC
+    aliases: [USDC, Circle]
+    matchMode: phrase
+    embeddingText: >
+      USDC stablecoin issued by Circle, regulated stablecoins, USDC market
+      share and depeg events.
+    assetIds: []
+    status: active
+
+  - topicId: crypto-defi
+    category: Cryptocurrencies
+    subgroup: Themes
+    displayName: DeFi
+    aliases: [DeFi, decentralized finance, DEX, lending protocol, yield farming]
+    matchMode: phrase
+    embeddingText: >
+      Decentralized finance protocols, DEX volumes, on-chain lending, DeFi
+      total value locked, protocol exploits and governance.
+    assetIds: []
+    status: active
+
+  - topicId: crypto-stablecoins
+    category: Cryptocurrencies
+    subgroup: Themes
+    displayName: Stablecoins
+    aliases: [stablecoin, stablecoin regulation, stablecoin bill]
+    matchMode: phrase
+    embeddingText: >
+      Stablecoin industry and regulation, stablecoin legislation, payment
+      adoption of stablecoins, reserve requirements.
+    assetIds: []
+    status: active
+
+  - topicId: crypto-layer2
+    category: Cryptocurrencies
+    subgroup: Themes
+    displayName: Layer 2
+    aliases: [Layer 2, L2 rollup, optimistic rollup, zk-rollup, Arbitrum, Optimism, Base chain]
+    matchMode: phrase
+    embeddingText: >
+      Ethereum Layer 2 scaling, rollups, Arbitrum Optimism and Base, L2
+      transaction fees and adoption.
+    assetIds: []
+    status: active
+
+  - topicId: crypto-tokenization
+    category: Cryptocurrencies
+    subgroup: Themes
+    displayName: Tokenization
+    aliases: [tokenization, tokenized assets, real-world assets, RWA, tokenized treasuries]
+    matchMode: phrase
+    embeddingText: >
+      Tokenization of real-world assets, tokenized Treasury funds, on-chain
+      securities, institutional blockchain adoption.
+    assetIds: []
+    status: active
+
+  # ── 6. Real Estate ─────────────────────────────────────────────
+  - topicId: re-etf-vnq
+    category: Real Estate
+    subgroup: REITs
+    displayName: VNQ
+    aliases: [VNQ]
+    matchMode: exact-symbol
+    embeddingText: >
+      Vanguard Real Estate ETF (VNQ), broad US REIT index fund, real estate
+      sector fund flows.
+    assetIds: [VNQ]
+    status: active
+
+  - topicId: re-stocks-o
+    category: Real Estate
+    subgroup: REITs
+    displayName: Realty Income
+    aliases: [Realty Income]
+    matchMode: phrase
+    embeddingText: >
+      Realty Income Corporation (NYSE: O), net-lease retail REIT, monthly
+      dividend company, triple-net lease real estate.
+    assetIds: [O]
+    status: active
+
+  - topicId: re-stocks-pld
+    category: Real Estate
+    subgroup: REITs
+    displayName: Prologis
+    aliases: [Prologis, PLD]
+    matchMode: exact-symbol
+    embeddingText: >
+      Prologis Inc (NYSE: PLD), industrial logistics REIT, warehouse demand,
+      e-commerce real estate.
+    assetIds: [PLD]
+    status: active
+
+  - topicId: re-residential
+    category: Real Estate
+    subgroup: Property Categories
+    displayName: Residential
+    aliases: [housing market, home prices, mortgage rates, home sales, homebuilder]
+    matchMode: phrase
+    embeddingText: >
+      US residential real estate, housing market conditions, home prices and
+      sales, mortgage rates, homebuilder activity.
+    assetIds: []
+    status: active
+
+  - topicId: re-office
+    category: Real Estate
+    subgroup: Property Categories
+    displayName: Office
+    aliases: [office real estate, office vacancy, commercial real estate, office buildings]
+    matchMode: phrase
+    embeddingText: >
+      Office real estate, vacancy rates, return-to-office trends, commercial
+      real estate debt, office-to-residential conversion.
+    assetIds: []
+    status: active
+
+  - topicId: re-industrial
+    category: Real Estate
+    subgroup: Property Categories
+    displayName: Industrial
+    aliases: [industrial real estate, warehouse demand, logistics real estate]
+    matchMode: phrase
+    embeddingText: >
+      Industrial and logistics real estate, warehouse demand and supply,
+      e-commerce fulfillment space.
+    assetIds: [PLD]
+    status: active
+
+  - topicId: re-datacenters
+    category: Real Estate
+    subgroup: Property Categories
+    displayName: Data Centers
+    aliases: [data center real estate, data center REIT, data center construction, data center demand]
+    matchMode: phrase
+    embeddingText: >
+      Data center real estate, AI-driven data center construction boom,
+      power constraints, data center REITs and hyperscaler leasing.
+    assetIds: []
+    status: active
+
+  - topicId: re-selfstorage
+    category: Real Estate
+    subgroup: Property Categories
+    displayName: Self Storage
+    aliases: [self storage, self-storage REIT, storage units]
+    matchMode: phrase
+    embeddingText: >
+      Self-storage real estate, storage REIT occupancy and rates, moving
+      activity impact on storage demand.
+    assetIds: []
+    status: active
+
+  # ── 7. Macro: Central Banks ────────────────────────────────────
+  - topicId: macro-fed
+    category: Macroeconomic
+    subgroup: Central Banks
+    displayName: Federal Reserve
+    aliases: [Federal Reserve, the Fed, FOMC, Jerome Powell, Fed officials]
+    matchMode: phrase
+    negativeTerms: [federal reserve police]
+    embeddingText: >
+      US Federal Reserve monetary policy, FOMC rate decisions, Jerome Powell
+      speeches and testimony, Fed dot plot, quantitative tightening, Fed
+      governors and regional presidents commentary.
+    assetIds: [US10Y, DXY, XAUUSD]
+    status: active
+
+  - topicId: macro-ecb
+    category: Macroeconomic
+    subgroup: Central Banks
+    displayName: European Central Bank
+    aliases: [European Central Bank, ECB, Christine Lagarde]
+    matchMode: phrase
+    embeddingText: >
+      European Central Bank monetary policy, ECB rate decisions, Christine
+      Lagarde, euro area inflation targeting, ECB balance sheet.
+    assetIds: [EURUSD]
+    status: active
+
+  - topicId: macro-boj
+    category: Macroeconomic
+    subgroup: Central Banks
+    displayName: Bank of Japan
+    aliases: [Bank of Japan, BoJ, BOJ, Kazuo Ueda]
+    matchMode: phrase
+    embeddingText: >
+      Bank of Japan monetary policy, BoJ rate decisions and normalization,
+      yield curve control, Governor Ueda, impact on yen and JGBs.
+    assetIds: [USDJPY]
+    status: active
+
+  - topicId: macro-pboc
+    category: Macroeconomic
+    subgroup: Central Banks
+    displayName: People's Bank of China
+    aliases: [People's Bank of China, PBoC, PBOC, China central bank]
+    matchMode: phrase
+    embeddingText: >
+      People's Bank of China monetary policy, PBoC rate cuts and reserve
+      requirements, yuan fixing, Chinese stimulus measures.
+    assetIds: [USDCNY]
+    status: active
+
+  # ── 7. Macro: Economic Indicators ──────────────────────────────
+  - topicId: macro-cpi
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: CPI
+    aliases: [CPI, consumer price index, inflation report, inflation data, core inflation]
+    matchMode: phrase
+    embeddingText: >
+      US Consumer Price Index, monthly inflation report, core CPI, inflation
+      surprises and their impact on rate expectations.
+    assetIds: [US10Y, DXY]
+    status: active
+
+  - topicId: macro-ppi
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: PPI
+    aliases: [PPI, producer price index, producer prices, wholesale inflation]
+    matchMode: phrase
+    embeddingText: >
+      US Producer Price Index, wholesale inflation, pipeline price pressures
+      feeding into consumer inflation.
+    assetIds: []
+    status: active
+
+  - topicId: macro-nfp
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: Nonfarm Payrolls
+    aliases: [nonfarm payrolls, NFP, jobs report, employment report, payrolls]
+    matchMode: phrase
+    embeddingText: >
+      US nonfarm payrolls jobs report, monthly employment data, wage growth,
+      labor market strength and Fed policy implications.
+    assetIds: [US10Y, DXY]
+    status: active
+
+  - topicId: macro-gdp
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: GDP
+    aliases: [GDP, gross domestic product, GDP growth, economic growth data]
+    matchMode: phrase
+    embeddingText: >
+      Gross domestic product growth data, quarterly GDP reports, recession
+      and expansion signals, GDP forecasts.
+    assetIds: []
+    status: active
+
+  - topicId: macro-retail
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: Retail Sales
+    aliases: [retail sales, consumer spending data]
+    matchMode: phrase
+    embeddingText: >
+      US retail sales data, consumer spending strength, discretionary versus
+      essential spending trends.
+    assetIds: []
+    status: active
+
+  - topicId: macro-pmi
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: PMI
+    aliases: [PMI, purchasing managers index, ISM manufacturing, ISM services]
+    matchMode: phrase
+    embeddingText: >
+      Purchasing managers index surveys, ISM manufacturing and services,
+      business activity expansion or contraction signals.
+    assetIds: []
+    status: active
+
+  - topicId: macro-unemployment
+    category: Macroeconomic
+    subgroup: Economic Indicators
+    displayName: Unemployment
+    aliases: [unemployment rate, jobless claims, initial claims, layoffs]
+    matchMode: phrase
+    embeddingText: >
+      Unemployment rate, weekly jobless claims, layoffs announcements, labor
+      market slack and tightness.
+    assetIds: []
+    status: active
+
+  # ── 7. Macro: Rates ────────────────────────────────────────────
+  - topicId: macro-fedfunds
+    category: Macroeconomic
+    subgroup: Rates
+    displayName: Fed Funds Rate
+    aliases: [fed funds rate, federal funds rate, rate cut, rate hike, rate decision]
+    matchMode: phrase
+    embeddingText: >
+      Federal funds rate target, rate cuts and hikes, futures-implied rate
+      path, terminal rate expectations.
+    assetIds: [US2Y]
+    status: active
+
+  - topicId: macro-yields
+    category: Macroeconomic
+    subgroup: Rates
+    displayName: Treasury Yields
+    aliases: [Treasury yields, bond yields, yields rose, yields fell, Treasury selloff]
+    matchMode: phrase
+    embeddingText: >
+      US Treasury yields broad moves, bond market selloffs and rallies,
+      yield levels driving equity valuations and mortgages.
+    assetIds: [US10Y]
+    status: active
+
+  - topicId: macro-curve
+    category: Macroeconomic
+    subgroup: Rates
+    displayName: Yield Curve
+    aliases: [yield curve, curve inversion, curve steepening, 2s10s]
+    matchMode: phrase
+    embeddingText: >
+      Treasury yield curve shape, inversion and steepening, 2s10s spread,
+      recession signal from the curve.
+    assetIds: [US2Y, US10Y]
+    status: active
+
+  # ── 8. Countries / Regions ─────────────────────────────────────
+  - topicId: geo-us
+    category: Countries / Regions
+    subgroup: Countries
+    displayName: United States
+    aliases: [US economy, American economy, US fiscal, US politics market]
+    matchMode: semantic-only
+    embeddingText: >
+      United States economy and markets, US fiscal policy, federal budget
+      and debt ceiling, US political developments affecting markets.
+    assetIds: [SPX, DXY]
+    status: active
+
+  - topicId: geo-china
+    category: Countries / Regions
+    subgroup: Countries
+    displayName: China
+    aliases: [China economy, Chinese economy, China stimulus, China property, China trade]
+    matchMode: phrase
+    embeddingText: >
+      China economy and markets, Chinese stimulus policy, property sector
+      crisis, China trade and exports, US-China relations.
+    assetIds: [USDCNY, FXI]
+    status: active
+
+  - topicId: geo-japan
+    category: Countries / Regions
+    subgroup: Countries
+    displayName: Japan
+    aliases: [Japan economy, Japanese economy, Nikkei, Japan inflation]
+    matchMode: phrase
+    embeddingText: >
+      Japan economy and markets, Nikkei index, Japanese inflation and wages,
+      corporate governance reform, Japan trade.
+    assetIds: [NIKKEI, USDJPY]
+    status: active
+
+  - topicId: geo-germany
+    category: Countries / Regions
+    subgroup: Countries
+    displayName: Germany
+    aliases: [German economy, Germany economy, DAX, German industry]
+    matchMode: phrase
+    embeddingText: >
+      Germany economy and markets, DAX index, German manufacturing and
+      exports, German fiscal policy and energy costs.
+    assetIds: [DAX]
+    status: active
+
+  - topicId: geo-india
+    category: Countries / Regions
+    subgroup: Countries
+    displayName: India
+    aliases: [India economy, Indian economy, Sensex, Nifty, Indian markets]
+    matchMode: phrase
+    embeddingText: >
+      India economy and markets, Sensex and Nifty indices, Indian growth
+      story, foreign investment flows into India.
+    assetIds: [USDINR]
+    status: active
+
+  - topicId: geo-europe
+    category: Countries / Regions
+    subgroup: Regions
+    displayName: Europe
+    aliases: [European economy, euro area economy, eurozone, European markets, Stoxx]
+    matchMode: phrase
+    embeddingText: >
+      European economy and markets, euro area growth and inflation, European
+      equities, EU policy and regulation affecting markets.
+    assetIds: [EURUSD]
+    status: active
+
+  - topicId: geo-asean
+    category: Countries / Regions
+    subgroup: Regions
+    displayName: ASEAN
+    aliases: [ASEAN, Southeast Asia economy, Vietnam economy, Indonesia economy, Thailand economy]
+    matchMode: phrase
+    embeddingText: >
+      Southeast Asian economies, ASEAN trade and growth, Vietnam Indonesia
+      Thailand Philippines markets, supply chain shifts to Southeast Asia.
+    assetIds: []
+    status: active
+
+  - topicId: geo-latam
+    category: Countries / Regions
+    subgroup: Regions
+    displayName: Latin America
+    aliases: [Latin America economy, LatAm, Brazil economy, Mexico economy, Argentina economy]
+    matchMode: phrase
+    embeddingText: >
+      Latin American economies and markets, Brazil and Mexico growth,
+      commodity exports, regional politics affecting markets.
+    assetIds: [USDBRL, USDMXN]
+    status: active
+
+  - topicId: geo-mideast
+    category: Countries / Regions
+    subgroup: Regions
+    displayName: Middle East
+    aliases: [Middle East tensions, Gulf states, Saudi Arabia economy, Israel conflict, Iran]
+    matchMode: phrase
+    embeddingText: >
+      Middle East geopolitics and economies, Gulf oil producers, regional
+      conflicts affecting oil and risk sentiment, sovereign wealth funds.
+    assetIds: [WTI]
+    status: active
+
+  # ── 9. Alternative Assets ──────────────────────────────────────
+  - topicId: alt-pe
+    category: Alternative Assets
+    subgroup: Private Markets
+    displayName: Private Equity
+    aliases: [private equity, buyout fund, PE firm, KKR, Blackstone, Carlyle]
+    matchMode: phrase
+    embeddingText: >
+      Private equity industry, buyout deals, PE fundraising and exits, take-
+      private transactions, private credit expansion.
+    assetIds: []
+    status: active
+
+  - topicId: alt-vc
+    category: Alternative Assets
+    subgroup: Private Markets
+    displayName: Venture Capital
+    aliases: [venture capital, VC funding, startup funding, Series A, unicorn valuation]
+    matchMode: phrase
+    embeddingText: >
+      Venture capital industry, startup funding rounds, VC fundraising,
+      unicorn valuations, IPO pipeline from venture-backed companies.
+    assetIds: []
+    status: active
+
+  - topicId: alt-art
+    category: Alternative Assets
+    subgroup: Collectibles
+    displayName: Art
+    aliases: [art auction, art market, Sotheby's, Christie's]
+    matchMode: phrase
+    embeddingText: >
+      Art market and auctions, blue-chip artwork sales at Sotheby's and
+      Christie's, art as an alternative investment.
+    assetIds: []
+    status: active
+
+  - topicId: alt-wine
+    category: Alternative Assets
+    subgroup: Collectibles
+    displayName: Wine
+    aliases: [fine wine investment, wine market, wine auction, Bordeaux prices]
+    matchMode: phrase
+    embeddingText: >
+      Fine wine investment market, wine auctions, Bordeaux and Burgundy
+      prices, wine indices as alternative assets.
+    assetIds: []
+    status: active
+
+  - topicId: alt-watches
+    category: Alternative Assets
+    subgroup: Collectibles
+    displayName: Rare Watches
+    aliases: [watch auction, Rolex prices, Patek Philippe, luxury watch market]
+    matchMode: phrase
+    embeddingText: >
+      Rare and luxury watch market, Rolex and Patek Philippe secondary
+      prices, watch auctions as alternative investments.
+    assetIds: []
+    status: active
+
+  - topicId: alt-carbon
+    category: Alternative Assets
+    subgroup: Others
+    displayName: Carbon Credits
+    aliases: [carbon credits, carbon price, EU ETS, carbon allowances, carbon market]
+    matchMode: phrase
+    embeddingText: >
+      Carbon credit markets, EU emissions trading system allowance prices,
+      voluntary carbon markets, carbon as a tradable commodity.
+    assetIds: []
+    status: active
+
+  - topicId: alt-catbonds
+    category: Alternative Assets
+    subgroup: Others
+    displayName: Catastrophe Bonds
+    aliases: [catastrophe bond, cat bond, insurance-linked securities, ILS]
+    matchMode: phrase
+    embeddingText: >
+      Catastrophe bonds and insurance-linked securities, hurricane and
+      disaster risk transfer, cat bond yields and issuance.
+    assetIds: []
+    status: active

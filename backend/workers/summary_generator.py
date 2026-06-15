@@ -1,0 +1,256 @@
+"""Daily summary generator (LLD §6.6, §7): fetches the lens's 24h articles
+and tracked-asset price moves, picks the asset or news-only prompt variant,
+calls Sonnet, and writes the summary (never clobbering user edits)."""
+
+import json
+import time
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import anthropic
+import requests
+from botocore.exceptions import ClientError
+
+from app import settings
+from app.services import db, taxonomy
+from app.services.db import content_table
+from workers.scheduling import is_market_open
+
+CROSS_ASSET_MAP = (
+    Path(__file__).resolve().parents[2] / "infra" / "config" / "cross_asset_map.json"
+).read_text()
+
+ASSET_SYSTEM = f"""You are FinWing's financial analyst. Produce a daily summary for a user's investment lens.
+
+Rules:
+- Use hedged language: "may", "could", "appears to", "was consistent with" — never assert causation.
+- Frame explanations as candidate drivers, not conclusions.
+- Never give financial advice or recommendations.
+- Output exactly three sections with these markdown headers:
+  ## Market Moves
+  ## Key News
+  ## Possible Connections
+
+Length: about 300 words total.
+
+Cross-asset relationship reference (context, not gospel):
+<cross_asset_map>
+{CROSS_ASSET_MAP}
+</cross_asset_map>"""
+
+NEWS_ONLY_SYSTEM = """You are FinWing's financial analyst. This lens has no tracked assets with price data today (either the lens tracks no assets, or all relevant markets were closed).
+Produce a news-only synthesis — do NOT mention price movements or make price claims.
+
+Rules:
+- Never give financial advice.
+- Use hedged, analytical language.
+- Output exactly two sections with these markdown headers:
+  ## Today's Developments
+  ## What to Watch
+
+Length: about 250 words."""
+
+_client = None
+
+
+def client() -> anthropic.Anthropic:
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic(api_key=settings.anthropic_api_key())
+    return _client
+
+
+# ── Prices ───────────────────────────────────────────────────────
+
+
+def get_price_cache(asset_id: str, date: str) -> dict | None:
+    resp = content_table().get_item(Key={"PK": f"ASSET#{asset_id}", "SK": f"PRICE#{date}"})
+    item = resp.get("Item")
+    if item:
+        return {
+            "assetId": asset_id,
+            "symbol": item["symbol"],
+            "open": float(item["open"]),
+            "close": float(item["close"]),
+            "move": float(item["move"]),
+        }
+    return None
+
+
+def write_price_cache(asset_id: str, date: str, data: dict) -> None:
+    content_table().put_item(
+        Item={
+            "PK": f"ASSET#{asset_id}",
+            "SK": f"PRICE#{date}",
+            "symbol": data["symbol"],
+            "open": Decimal(str(data["open"])),
+            "close": Decimal(str(data["close"])),
+            "move": Decimal(str(data["move"])),
+            "fetchedAt": db.utcnow(),
+            "ttl": int(time.time()) + settings.PRICE_CACHE_TTL_DAYS * 86400,
+        }
+    )
+
+
+def fetch_price_move(asset_id: str, date: str, tz_name: str) -> dict | None:
+    cached = get_price_cache(asset_id, date)
+    if cached:
+        return cached
+
+    asset = taxonomy.assets().get(asset_id)
+    if not asset or not asset.get("hasPriceFeed") or not asset.get("finnhubSymbol"):
+        return None
+    local_midnight = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=ZoneInfo(tz_name))
+    if not is_market_open(asset["assetClass"], local_midnight):
+        return None
+
+    symbol = asset["finnhubSymbol"]
+    to_ts = int(datetime.now(timezone.utc).timestamp())
+    from_ts = to_ts - 2 * 86400  # cover weekends/quiet sessions
+    is_fx_like = ":" in symbol and symbol.startswith("OANDA")
+    is_crypto = symbol.startswith("BINANCE")
+    endpoint = (
+        "crypto/candle" if is_crypto else "forex/candle" if is_fx_like else "stock/candle"
+    )
+    resp = requests.get(
+        f"https://finnhub.io/api/v1/{endpoint}",
+        params={
+            "symbol": symbol,
+            "resolution": "D",
+            "from": from_ts,
+            "to": to_ts,
+            "token": settings.finnhub_api_key(),
+        },
+        timeout=10,
+    )
+    if resp.status_code != 200:
+        return None
+    data = resp.json()
+    if data.get("s") != "ok" or not data.get("c"):
+        return None
+
+    # Last daily candle = today's session; previous close as the reference
+    close = float(data["c"][-1])
+    ref = float(data["c"][-2]) if len(data["c"]) > 1 else float(data["o"][-1])
+    move = round((close - ref) / ref * 100, 2) if ref else 0.0
+    result = {"assetId": asset_id, "symbol": asset["symbol"], "open": ref, "close": close, "move": move}
+    write_price_cache(asset_id, date, result)
+    return result
+
+
+# ── Articles ─────────────────────────────────────────────────────
+
+
+def fetch_24h_articles(topic_ids: list[str], now_utc: datetime) -> list[dict]:
+    cutoff = (now_utc - timedelta(hours=24)).isoformat()
+    seen: dict[str, dict] = {}
+    for tid in topic_ids[: settings.MAX_TOPICS_PER_LENS]:
+        for item in db.query_topic_feed(tid, limit=30):
+            if item["publishedAt"] >= cutoff and item["articleId"] not in seen:
+                seen[item["articleId"]] = item
+    return sorted(seen.values(), key=lambda i: i["publishedAt"], reverse=True)[:40]
+
+
+# ── Prompt assembly ──────────────────────────────────────────────
+
+
+def build_user_turn(lens: dict, articles: list[dict], asset_moves: list[dict],
+                    prior: list[dict], date: str, news_only: bool) -> str:
+    topic_names = [
+        taxonomy.topics().get(t, {}).get("displayName", t) for t in lens["topicIds"]
+    ]
+    parts = [f'Lens: "{lens["name"]}" | Topics: {", ".join(topic_names)}', ""]
+
+    if not news_only:
+        parts.append(f"**24-hour asset moves ({date}):**")
+        for m in asset_moves:
+            parts.append(f"{m['symbol']}: {m['move']:+.1f}% ({m['open']:.2f} → {m['close']:.2f})")
+        parts.append("")
+
+    parts.append("**News abstractions (last 24h, newest first):**")
+    if articles:
+        for a in articles:
+            parts.append(f"[{a['source']}] {a['title']}")
+            parts.append(a.get("abstraction") or a.get("excerpt", ""))
+            parts.append("---")
+    else:
+        parts.append("(no matched news in the last 24 hours)")
+    parts.append("")
+
+    if prior:
+        parts.append("**Prior summaries (for continuity):**")
+        for p in prior:
+            parts.append(f"{p['date']}: {p['body'][:150]}")
+        parts.append("")
+
+    parts.append("Write the news-only daily summary." if news_only else "Write the daily summary.")
+    return "\n".join(parts)
+
+
+def extract_rationale(body: str) -> str:
+    for header in ("## Possible Connections", "## What to Watch"):
+        if header in body:
+            return body.split(header, 1)[1].strip()
+    return ""
+
+
+# ── Entry point ──────────────────────────────────────────────────
+
+
+def generate(user_id: str, lens_id: str, date: str, tz_name: str) -> bool:
+    existing = db.get_summary(user_id, lens_id, date)
+    if existing and existing.get("editedByUser"):
+        return False
+
+    lens = db.get_lens(user_id, lens_id)
+    if lens is None:
+        return False
+
+    now_utc = datetime.now(timezone.utc)
+    articles = fetch_24h_articles(lens["topicIds"], now_utc)
+    if not articles and not lens["trackedAssetIds"]:
+        return False  # nothing to say
+
+    week_ago = (now_utc - timedelta(days=7)).strftime("%Y-%m-%d")
+    prior = db.list_summaries(user_id, lens_id, week_ago, date)[-3:]
+    prior = [p for p in prior if p["date"] != date]
+
+    asset_moves = []
+    for asset_id in lens["trackedAssetIds"]:
+        move = fetch_price_move(asset_id, date, tz_name)
+        if move:
+            asset_moves.append(move)
+
+    news_only = len(asset_moves) == 0
+    system = NEWS_ONLY_SYSTEM if news_only else ASSET_SYSTEM
+    user_turn = build_user_turn(lens, articles, asset_moves, prior, date, news_only)
+
+    resp = client().messages.create(
+        model=settings.SONNET_MODEL,
+        max_tokens=600,
+        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": user_turn}],
+    )
+    body = resp.content[0].text.strip()
+
+    moves_attr = [
+        {
+            "assetId": m["assetId"],
+            "symbol": m["symbol"],
+            "move": Decimal(str(m["move"])),
+            "open": Decimal(str(m["open"])),
+            "close": Decimal(str(m["close"])),
+        }
+        for m in asset_moves
+    ]
+    return db.put_generated_summary(
+        user_id, lens_id, date, body, moves_attr, extract_rationale(body)
+    )
+
+
+def handler(event, context):
+    ok = generate(event["userId"], event["lensId"], event["date"], event.get("timezone", "UTC"))
+    print(json.dumps({"level": "INFO", "userId": event["userId"], "lensId": event["lensId"],
+                      "date": event["date"], "written": ok}))
