@@ -1,0 +1,144 @@
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as ssm from "aws-cdk-lib/aws-ssm";
+
+interface Props extends cdk.StackProps {
+  envName: string;
+}
+
+/** Shared stateful resources: DynamoDB tables, Cognito, SQS queues, secrets. */
+export class FoundationStack extends cdk.Stack {
+  readonly appTable: dynamodb.Table;
+  readonly contentTable: dynamodb.Table;
+  readonly userPool: cognito.UserPool;
+  readonly userPoolClient: cognito.UserPoolClient;
+  readonly matchingQueue: sqs.Queue;
+  readonly abstractionQueue: sqs.Queue;
+
+  constructor(scope: Construct, id: string, props: Props) {
+    super(scope, id, props);
+    const { envName } = props;
+    const removalPolicy =
+      envName === "prod" ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
+
+    // ── App table (per-user) ────────────────────────────────────
+    this.appTable = new dynamodb.Table(this, "AppTable", {
+      tableName: `finwing-app-${envName}`,
+      partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: "ttl",
+      pointInTimeRecovery: envName === "prod",
+      removalPolicy,
+    });
+    this.appTable.addGlobalSecondaryIndex({
+      indexName: "GSI1",
+      partitionKey: { name: "GSI1PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "GSI1SK", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+    this.appTable.addGlobalSecondaryIndex({
+      indexName: "GSI2",
+      partitionKey: { name: "GSI2PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "GSI2SK", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.INCLUDE,
+      nonKeyAttributes: ["timezone", "summaryTimePref", "lensCount"],
+    });
+
+    // ── Content table (shared news) ─────────────────────────────
+    this.contentTable = new dynamodb.Table(this, "ContentTable", {
+      tableName: `finwing-content-${envName}`,
+      partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: "ttl",
+      removalPolicy,
+    });
+
+    // ── Cognito ─────────────────────────────────────────────────
+    this.userPool = new cognito.UserPool(this, "UserPool", {
+      userPoolName: `finwing-${envName}`,
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      standardAttributes: { email: { required: true, mutable: true } },
+      passwordPolicy: { minLength: 8, requireDigits: true, requireLowercase: true },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy,
+    });
+    new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+      userPoolId: this.userPool.userPoolId,
+      groupName: "finwing-admins",
+      description: "FinWing administrators",
+    });
+
+    const domainPrefix = `finwing-${envName}-${this.account.slice(0, 6)}`;
+    this.userPool.addDomain("HostedUiDomain", {
+      cognitoDomain: { domainPrefix },
+    });
+
+    const callbackUrls =
+      envName === "prod"
+        ? ["https://finwingnews.com/auth/callback"]
+        : ["http://localhost:5173/auth/callback"];
+
+    this.userPoolClient = this.userPool.addClient("WebClient", {
+      generateSecret: false,
+      authFlows: { userSrp: true },
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls,
+        logoutUrls: callbackUrls.map((u) => u.replace("/auth/callback", "/signin")),
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+        // Google IdP is attached out-of-band once the OAuth client ID/secret
+        // are in SSM (see infra/README) — keeps secrets out of source.
+      ],
+    });
+
+    // ── SQS pipeline queues (with DLQs) ─────────────────────────
+    const matchingDlq = new sqs.Queue(this, "MatchingDLQ", {
+      queueName: `finwing-matching-dlq-${envName}`,
+    });
+    this.matchingQueue = new sqs.Queue(this, "MatchingQueue", {
+      queueName: `finwing-matching-${envName}`,
+      visibilityTimeout: cdk.Duration.seconds(90),
+      deadLetterQueue: { queue: matchingDlq, maxReceiveCount: 3 },
+    });
+
+    const abstractionDlq = new sqs.Queue(this, "AbstractionDLQ", {
+      queueName: `finwing-abstraction-dlq-${envName}`,
+    });
+    this.abstractionQueue = new sqs.Queue(this, "AbstractionQueue", {
+      queueName: `finwing-abstraction-${envName}`,
+      visibilityTimeout: cdk.Duration.seconds(90),
+      deadLetterQueue: { queue: abstractionDlq, maxReceiveCount: 3 },
+    });
+
+    // ── Secret placeholders (values set manually, never in source) ──
+    for (const name of ["anthropic-api-key", "finnhub-api-key"]) {
+      new ssm.StringParameter(this, `Param-${name}`, {
+        parameterName: `/finwing/${envName}/${name}`,
+        stringValue: "REPLACE_ME",
+        tier: ssm.ParameterTier.STANDARD,
+      });
+    }
+
+    new cdk.CfnOutput(this, "UserPoolId", { value: this.userPool.userPoolId });
+    new cdk.CfnOutput(this, "UserPoolClientId", {
+      value: this.userPoolClient.userPoolClientId,
+    });
+    new cdk.CfnOutput(this, "CognitoDomain", {
+      value: `${domainPrefix}.auth.${this.region}.amazoncognito.com`,
+    });
+  }
+}

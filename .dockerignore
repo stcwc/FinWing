@@ -1,0 +1,14 @@
+# Docker build context = repo root for the matching image. Keep it lean and
+# prevent copying CDK output / virtualenvs into the image (and into itself).
+**/.venv
+**/node_modules
+**/cdk.out
+**/.build
+**/__pycache__
+**/*.pyc
+.git
+frontend
+infra/cdk.out
+infra/node_modules
+backend/.venv
+backend/tests

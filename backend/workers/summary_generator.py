@@ -18,9 +18,7 @@ from app.services import db, taxonomy
 from app.services.db import content_table
 from workers.scheduling import is_market_open
 
-CROSS_ASSET_MAP = (
-    Path(__file__).resolve().parents[2] / "infra" / "config" / "cross_asset_map.json"
-).read_text()
+CROSS_ASSET_MAP = (taxonomy.CONFIG_DIR / "cross_asset_map.json").read_text()
 
 ASSET_SYSTEM = f"""You are FinWing's financial analyst. Produce a daily summary for a user's investment lens.
 

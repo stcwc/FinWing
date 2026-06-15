@@ -1,0 +1,115 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend deps
+        working-directory: backend
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Backend tests
+        working-directory: backend
+        run: python -m pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Frontend typecheck + build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  deploy-beta:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: beta
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_BETA }}
+          aws-region: us-east-1
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+          VITE_COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          VITE_API_BASE: ${{ vars.API_BASE }}
+        run: |
+          npm ci
+          npm run build
+      - name: CDK deploy beta
+        working-directory: infra
+        run: |
+          npm ci
+          npx cdk deploy --all --context env=beta --require-approval never
+      - name: Seed taxonomy
+        run: |
+          pip install boto3 pyyaml fastembed numpy
+          python infra/scripts/seed_taxonomy.py \
+            --table finwing-content-beta \
+            --static-out frontend/dist
+      - name: Sync /static config to SPA bucket
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks --stack-name FinWing-Frontend-beta \
+            --query "Stacks[0].Outputs[?OutputKey=='SpaBucketName'].OutputValue" --output text)
+          aws s3 cp frontend/dist/taxonomy.json s3://$BUCKET/static/taxonomy.json
+          aws s3 cp frontend/dist/assets.json   s3://$BUCKET/static/assets.json
+
+  deploy-prod:
+    needs: deploy-beta
+    runs-on: ubuntu-latest
+    environment: production # requires reviewer approval in GitHub settings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_PROD }}
+          aws-region: us-east-1
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN_PROD }}
+          VITE_COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID_PROD }}
+          VITE_API_BASE: ${{ vars.API_BASE_PROD }}
+        run: |
+          npm ci
+          npm run build
+      - name: CDK deploy prod
+        working-directory: infra
+        run: |
+          npm ci
+          npx cdk deploy --all --context env=prod --require-approval never
+      - name: Seed taxonomy
+        run: |
+          pip install boto3 pyyaml fastembed numpy
+          python infra/scripts/seed_taxonomy.py \
+            --table finwing-content-prod \
+            --static-out frontend/dist
+      - name: Sync /static config to SPA bucket
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks --stack-name FinWing-Frontend-prod \
+            --query "Stacks[0].Outputs[?OutputKey=='SpaBucketName'].OutputValue" --output text)
+          aws s3 cp frontend/dist/taxonomy.json s3://$BUCKET/static/taxonomy.json
+          aws s3 cp frontend/dist/assets.json   s3://$BUCKET/static/assets.json

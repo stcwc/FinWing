@@ -1,0 +1,18 @@
+# Container image for the matching worker and taxonomy seeder.
+# Bundles fastembed + the bge-small-en-v1.5 ONNX model, which is too large for
+# a zip Lambda. (LLD §10)
+# Build context = repo root (so infra/config is reachable).
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY backend/requirements.txt backend/workers/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r workers/requirements.txt
+
+COPY backend/app ./app
+COPY backend/workers ./workers
+COPY infra/config ./infra/config
+
+# Pre-download the embedding model into the image so cold starts don't fetch it.
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-small-en-v1.5')" || true
+
+# Default handler; overridden per-function in CDK.
+CMD ["workers.matching.handler"]

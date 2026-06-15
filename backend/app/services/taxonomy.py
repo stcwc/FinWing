@@ -7,7 +7,19 @@ from pathlib import Path
 
 import yaml
 
-CONFIG_DIR = Path(__file__).resolve().parents[3] / "infra" / "config"
+
+def _find_config_dir() -> Path:
+    """Locate infra/config in both the repo layout (backend/app/services/…) and
+    the Lambda bundle layout (app/ and infra/config/ side by side at the root)."""
+    here = Path(__file__).resolve()
+    for base in here.parents:
+        candidate = base / "infra" / "config"
+        if (candidate / "taxonomy.yaml").exists():
+            return candidate
+    raise FileNotFoundError("infra/config/taxonomy.yaml not found on any parent path")
+
+
+CONFIG_DIR = _find_config_dir()
 
 
 @lru_cache(maxsize=1)
