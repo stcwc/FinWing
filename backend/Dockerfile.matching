@@ -4,8 +4,10 @@
 # Build context = repo root (so infra/config is reachable).
 FROM public.ecr.aws/lambda/python:3.12
 
-COPY backend/requirements.txt backend/workers/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt -r workers/requirements.txt
+# Copy the two requirements files to distinct names (same basename otherwise).
+COPY backend/requirements.txt /tmp/requirements.txt
+COPY backend/workers/requirements.txt /tmp/workers-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt -r /tmp/workers-requirements.txt
 
 COPY backend/app ./app
 COPY backend/workers ./workers
