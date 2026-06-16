@@ -91,7 +91,15 @@ export class FoundationStack extends cdk.Stack {
           this,
           `/finwing/${envName}/google-client-id`
         ),
-        clientSecretValue: cdk.SecretValue.ssmSecure(`/finwing/${envName}/google-client-secret`),
+        // CloudFormation does not support ssm-secure references on this field,
+        // so the secret is a plain SSM String resolved at deploy ({{resolve:ssm}}).
+        // Cognito stores the secret anyway; SSM access stays IAM-restricted.
+        clientSecretValue: cdk.SecretValue.unsafePlainText(
+          ssm.StringParameter.valueForStringParameter(
+            this,
+            `/finwing/${envName}/google-client-secret`
+          )
+        ),
         scopes: ["openid", "email", "profile"],
         attributeMapping: {
           email: cognito.ProviderAttribute.GOOGLE_EMAIL,
