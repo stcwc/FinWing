@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { useAsync, useInterval } from "../api/hooks";
-import { FeedItem, FeedPage, Lens } from "../api/types";
+import { ARTICLE_DND_TYPE, ArticleAttachment, FeedItem, FeedPage, Lens } from "../api/types";
 import { EmptyState, Spinner, timeAgo } from "../components/ui";
 
 const POLL_MS = 45_000;
@@ -85,22 +85,45 @@ function Feed({ lens }: { lens: Lens }) {
 }
 
 function FeedCard({ item }: { item: FeedItem }) {
+  function onDragStart(e: React.DragEvent) {
+    const payload: ArticleAttachment = {
+      articleId: item.articleId,
+      title: item.title,
+      source: item.source,
+      content: item.abstraction ?? item.excerpt,
+      url: item.url,
+    };
+    e.dataTransfer.setData(ARTICLE_DND_TYPE, JSON.stringify(payload));
+    e.dataTransfer.effectAllowed = "copy";
+  }
+
   return (
-    <article className="card p-4 transition-shadow hover:shadow-md">
+    <article
+      draggable
+      onDragStart={onDragStart}
+      title="Drag into Chat to discuss"
+      className="card group cursor-grab p-4 transition-shadow hover:shadow-md active:cursor-grabbing"
+    >
       <div className="mb-1 flex items-center gap-2 text-xs text-ink-400">
         <span className="font-medium text-ink-600">{item.source}</span>
         <span>·</span>
         <span>{timeAgo(item.publishedAt)}</span>
-        {item.abstraction && (
-          <span className="ml-auto rounded-full bg-wing-500/10 px-2 py-0.5 font-medium text-wing-600">
-            AI summary
+        <span className="ml-auto flex items-center gap-2">
+          <span className="hidden text-ink-400 group-hover:inline" aria-hidden>
+            ⠿ drag to chat
           </span>
-        )}
+          {item.abstraction && (
+            <span className="rounded-full bg-wing-500/10 px-2 py-0.5 font-medium text-wing-600">
+              AI summary
+            </span>
+          )}
+        </span>
       </div>
       <a
         href={item.url}
         target="_blank"
         rel="noreferrer"
+        draggable={false}
         className="block font-semibold leading-snug text-ink-900 hover:text-wing-600"
       >
         {item.title}

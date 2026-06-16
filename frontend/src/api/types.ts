@@ -78,3 +78,13 @@ export interface TopicSuggestion {
   topicIds: string[];
   assetIds: string[];
 }
+
+export interface ArticleAttachment {
+  articleId: string;
+  title: string;
+  source: string;
+  content: string;
+  url: string;
+}
+
+export const ARTICLE_DND_TYPE = "application/x-finwing-article";

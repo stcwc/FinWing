@@ -108,8 +108,16 @@ class SummaryEdit(BaseModel):
     version: int
 
 
+class ChatAttachment(BaseModel):
+    title: str = Field(max_length=400)
+    source: str = Field(default="", max_length=120)
+    content: str = Field(default="", max_length=2000)
+    url: str = Field(default="", max_length=1000)
+
+
 class ChatMessage(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
+    attachments: list[ChatAttachment] = Field(default_factory=list, max_length=10)
 
 
 class ChatResponse(BaseModel):

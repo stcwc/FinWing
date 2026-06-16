@@ -35,10 +35,24 @@ def _financial_context(user_id: str) -> str:
     return "\n".join(lines)
 
 
-def respond(user_id: str, message: str) -> str:
+def _format_attachments(attachments: list[dict]) -> str:
+    lines = ["The user dragged in these news items as context for this question:"]
+    for a in attachments[:10]:
+        src = a.get("source") or "source unknown"
+        lines.append(f"- [{src}] {a.get('title', '')}")
+        if a.get("content"):
+            lines.append(f"  {a['content']}")
+        if a.get("url"):
+            lines.append(f"  {a['url']}")
+    return "\n".join(lines)
+
+
+def respond(user_id: str, message: str, attachments: list[dict] | None = None) -> str:
     state = db.get_chat_state(user_id)
     window = db.recent_chat_turns(user_id, settings.CHAT_WINDOW_TURNS)
 
+    # Store the human-typed message in history (keeps the transcript clean); the
+    # attached article content is injected into this turn only.
     db.append_chat_turn(user_id, "user", message)
 
     system_blocks = [
@@ -50,7 +64,10 @@ def respond(user_id: str, message: str) -> str:
             {"type": "text", "text": f"Earlier conversation summary:\n{state['runningSummary']}"}
         )
 
-    messages = window + [{"role": "user", "content": message}]
+    turn_content = message
+    if attachments:
+        turn_content = f"{_format_attachments(attachments)}\n\nQuestion: {message}"
+    messages = window + [{"role": "user", "content": turn_content}]
     resp = _client().messages.create(
         model=settings.HAIKU_MODEL,
         max_tokens=1024,
