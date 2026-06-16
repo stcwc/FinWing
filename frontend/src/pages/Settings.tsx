@@ -3,7 +3,7 @@ import { api, loadStatic } from "../api/client";
 import { useAsync } from "../api/hooks";
 import { useAuth } from "../auth";
 import { Asset, Lens, Topic, UserProfile } from "../api/types";
-import { LensEditor } from "../components/LensEditor";
+import { LensComposer } from "../components/LensComposer";
 import { EmptyState, Modal, Spinner, Toast } from "../components/ui";
 
 export default function Settings() {
@@ -96,7 +96,8 @@ export default function Settings() {
           title={editing === "new" ? "New lens" : `Edit ${editing.name}`}
           onClose={() => setEditing(null)}
         >
-          <LensEditor
+          <LensComposer
+            showSuggest={editing === "new"}
             topics={topics.data!}
             assets={assets.data!}
             maxTopics={10}
