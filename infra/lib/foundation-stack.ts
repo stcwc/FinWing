@@ -125,7 +125,7 @@ export class FoundationStack extends cdk.Stack {
     });
 
     // ── Secret placeholders (values set manually, never in source) ──
-    for (const name of ["anthropic-api-key", "finnhub-api-key"]) {
+    for (const name of ["anthropic-api-key", "finnhub-api-key", "twelvedata-api-key"]) {
       new ssm.StringParameter(this, `Param-${name}`, {
         parameterName: `/finwing/${envName}/${name}`,
         stringValue: "REPLACE_ME",

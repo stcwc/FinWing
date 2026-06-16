@@ -134,6 +134,7 @@ def main():
                 "name": asset["name"],
                 "assetClass": asset["assetClass"],
                 "finnhubSymbol": asset.get("finnhubSymbol", ""),
+                "twelveDataSymbol": asset.get("twelveDataSymbol", ""),
                 "hasPriceFeed": asset.get("hasPriceFeed", False),
             }
         )

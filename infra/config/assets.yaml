@@ -2,78 +2,81 @@
 # assetId is stable. hasPriceFeed=false → asset can be tracked but the daily
 # summary will not report a price move for it.
 #
-# finnhubSymbol conventions:
-#   equities/ETFs: plain ticker        (free tier: US stocks + ETFs)
-#   FX:            OANDA:<BASE>_<QUOTE>
-#   crypto:        BINANCE:<PAIR>
-#   indices/yields: no free Finnhub feed → hasPriceFeed: false (ETF proxies
-#                   exist in the catalog for users who want a price)
+# twelveDataSymbol is the symbol used for Twelve Data time_series (daily OHLC,
+# live + historical). Conventions:
+#   equities/ETFs/REITs: US ticker
+#   FX:                  BASE/QUOTE (e.g. USD/JPY)
+#   crypto:              BASE/USD   (e.g. BTC/USD)
+#   gold:                XAU/USD    (only spot metal on TD free)
+#   other commodities:   US ETF proxy (silver→SLV, WTI→USO, Brent→BNO,
+#                        natgas→UNG, copper→CPER) — spot pairs are TD premium.
+#   yields/no feed:      "" (hasPriceFeed: false)
 
 assets:
   # ── Equities ───────────────────────────────────────────────────
-  - { assetId: NVDA,  symbol: NVDA,  name: NVIDIA Corporation,        assetClass: equity, finnhubSymbol: NVDA,  hasPriceFeed: true }
-  - { assetId: MSFT,  symbol: MSFT,  name: Microsoft Corporation,     assetClass: equity, finnhubSymbol: MSFT,  hasPriceFeed: true }
-  - { assetId: AMZN,  symbol: AMZN,  name: Amazon.com Inc,            assetClass: equity, finnhubSymbol: AMZN,  hasPriceFeed: true }
-  - { assetId: GOOG,  symbol: GOOG,  name: Alphabet Inc,              assetClass: equity, finnhubSymbol: GOOG,  hasPriceFeed: true }
-  - { assetId: META,  symbol: META,  name: Meta Platforms Inc,        assetClass: equity, finnhubSymbol: META,  hasPriceFeed: true }
-  - { assetId: TSLA,  symbol: TSLA,  name: Tesla Inc,                 assetClass: equity, finnhubSymbol: TSLA,  hasPriceFeed: true }
-  - { assetId: AAPL,  symbol: AAPL,  name: Apple Inc,                 assetClass: equity, finnhubSymbol: AAPL,  hasPriceFeed: true }
-  - { assetId: O,     symbol: O,     name: Realty Income Corporation, assetClass: reit,   finnhubSymbol: O,     hasPriceFeed: true }
-  - { assetId: PLD,   symbol: PLD,   name: Prologis Inc,              assetClass: reit,   finnhubSymbol: PLD,   hasPriceFeed: true }
+  - { assetId: NVDA,  symbol: NVDA,  name: NVIDIA Corporation,        assetClass: equity, finnhubSymbol: NVDA,  twelveDataSymbol: NVDA,  hasPriceFeed: true }
+  - { assetId: MSFT,  symbol: MSFT,  name: Microsoft Corporation,     assetClass: equity, finnhubSymbol: MSFT,  twelveDataSymbol: MSFT,  hasPriceFeed: true }
+  - { assetId: AMZN,  symbol: AMZN,  name: Amazon.com Inc,            assetClass: equity, finnhubSymbol: AMZN,  twelveDataSymbol: AMZN,  hasPriceFeed: true }
+  - { assetId: GOOG,  symbol: GOOG,  name: Alphabet Inc,              assetClass: equity, finnhubSymbol: GOOG,  twelveDataSymbol: GOOG,  hasPriceFeed: true }
+  - { assetId: META,  symbol: META,  name: Meta Platforms Inc,        assetClass: equity, finnhubSymbol: META,  twelveDataSymbol: META,  hasPriceFeed: true }
+  - { assetId: TSLA,  symbol: TSLA,  name: Tesla Inc,                 assetClass: equity, finnhubSymbol: TSLA,  twelveDataSymbol: TSLA,  hasPriceFeed: true }
+  - { assetId: AAPL,  symbol: AAPL,  name: Apple Inc,                 assetClass: equity, finnhubSymbol: AAPL,  twelveDataSymbol: AAPL,  hasPriceFeed: true }
+  - { assetId: O,     symbol: O,     name: Realty Income Corporation, assetClass: reit,   finnhubSymbol: O,     twelveDataSymbol: O,     hasPriceFeed: true }
+  - { assetId: PLD,   symbol: PLD,   name: Prologis Inc,              assetClass: reit,   finnhubSymbol: PLD,   twelveDataSymbol: PLD,   hasPriceFeed: true }
 
   # ── Index ETF proxies (indices themselves have no free feed) ───
-  - { assetId: SPX,    symbol: SPY,  name: "S&P 500 (SPY proxy)",        assetClass: etf, finnhubSymbol: SPY,  hasPriceFeed: true }
-  - { assetId: NDX,    symbol: QQQ,  name: "Nasdaq 100 (QQQ proxy)",     assetClass: etf, finnhubSymbol: QQQ,  hasPriceFeed: true }
-  - { assetId: DJI,    symbol: DIA,  name: "Dow Jones (DIA proxy)",      assetClass: etf, finnhubSymbol: DIA,  hasPriceFeed: true }
-  - { assetId: RUT,    symbol: IWM,  name: "Russell 2000 (IWM proxy)",   assetClass: etf, finnhubSymbol: IWM,  hasPriceFeed: true }
-  - { assetId: NIKKEI, symbol: EWJ,  name: "Japan equities (EWJ proxy)", assetClass: etf, finnhubSymbol: EWJ,  hasPriceFeed: true }
-  - { assetId: DAX,    symbol: EWG,  name: "Germany equities (EWG proxy)", assetClass: etf, finnhubSymbol: EWG, hasPriceFeed: true }
-  - { assetId: FXI,    symbol: FXI,  name: "China large-cap (FXI)",      assetClass: etf, finnhubSymbol: FXI,  hasPriceFeed: true }
+  - { assetId: SPX,    symbol: SPY,  name: "S&P 500 (SPY proxy)",        assetClass: etf, finnhubSymbol: SPY,  twelveDataSymbol: SPY,  hasPriceFeed: true }
+  - { assetId: NDX,    symbol: QQQ,  name: "Nasdaq 100 (QQQ proxy)",     assetClass: etf, finnhubSymbol: QQQ,  twelveDataSymbol: QQQ,  hasPriceFeed: true }
+  - { assetId: DJI,    symbol: DIA,  name: "Dow Jones (DIA proxy)",      assetClass: etf, finnhubSymbol: DIA,  twelveDataSymbol: DIA,  hasPriceFeed: true }
+  - { assetId: RUT,    symbol: IWM,  name: "Russell 2000 (IWM proxy)",   assetClass: etf, finnhubSymbol: IWM,  twelveDataSymbol: IWM,  hasPriceFeed: true }
+  - { assetId: NIKKEI, symbol: EWJ,  name: "Japan equities (EWJ proxy)", assetClass: etf, finnhubSymbol: EWJ,  twelveDataSymbol: EWJ,  hasPriceFeed: true }
+  - { assetId: DAX,    symbol: EWG,  name: "Germany equities (EWG proxy)", assetClass: etf, finnhubSymbol: EWG, twelveDataSymbol: EWG, hasPriceFeed: true }
+  - { assetId: FXI,    symbol: FXI,  name: "China large-cap (FXI)",      assetClass: etf, finnhubSymbol: FXI,  twelveDataSymbol: FXI,  hasPriceFeed: true }
 
   # ── Sector / theme ETFs ────────────────────────────────────────
-  - { assetId: SOXX, symbol: SOXX, name: iShares Semiconductor ETF,      assetClass: etf, finnhubSymbol: SOXX, hasPriceFeed: true }
-  - { assetId: XLV,  symbol: XLV,  name: Health Care Select Sector SPDR, assetClass: etf, finnhubSymbol: XLV,  hasPriceFeed: true }
-  - { assetId: ITA,  symbol: ITA,  name: iShares US Aerospace & Defense, assetClass: etf, finnhubSymbol: ITA,  hasPriceFeed: true }
-  - { assetId: XLF,  symbol: XLF,  name: Financial Select Sector SPDR,   assetClass: etf, finnhubSymbol: XLF,  hasPriceFeed: true }
-  - { assetId: XLU,  symbol: XLU,  name: Utilities Select Sector SPDR,   assetClass: etf, finnhubSymbol: XLU,  hasPriceFeed: true }
-  - { assetId: XLP,  symbol: XLP,  name: Consumer Staples Select SPDR,   assetClass: etf, finnhubSymbol: XLP,  hasPriceFeed: true }
-  - { assetId: VNQ,  symbol: VNQ,  name: Vanguard Real Estate ETF,       assetClass: etf, finnhubSymbol: VNQ,  hasPriceFeed: true }
+  - { assetId: SOXX, symbol: SOXX, name: iShares Semiconductor ETF,      assetClass: etf, finnhubSymbol: SOXX, twelveDataSymbol: SOXX, hasPriceFeed: true }
+  - { assetId: XLV,  symbol: XLV,  name: Health Care Select Sector SPDR, assetClass: etf, finnhubSymbol: XLV,  twelveDataSymbol: XLV,  hasPriceFeed: true }
+  - { assetId: ITA,  symbol: ITA,  name: iShares US Aerospace & Defense, assetClass: etf, finnhubSymbol: ITA,  twelveDataSymbol: ITA,  hasPriceFeed: true }
+  - { assetId: XLF,  symbol: XLF,  name: Financial Select Sector SPDR,   assetClass: etf, finnhubSymbol: XLF,  twelveDataSymbol: XLF,  hasPriceFeed: true }
+  - { assetId: XLU,  symbol: XLU,  name: Utilities Select Sector SPDR,   assetClass: etf, finnhubSymbol: XLU,  twelveDataSymbol: XLU,  hasPriceFeed: true }
+  - { assetId: XLP,  symbol: XLP,  name: Consumer Staples Select SPDR,   assetClass: etf, finnhubSymbol: XLP,  twelveDataSymbol: XLP,  hasPriceFeed: true }
+  - { assetId: VNQ,  symbol: VNQ,  name: Vanguard Real Estate ETF,       assetClass: etf, finnhubSymbol: VNQ,  twelveDataSymbol: VNQ,  hasPriceFeed: true }
 
   # ── Bond ETFs + yields ─────────────────────────────────────────
-  - { assetId: TLT,   symbol: TLT,   name: iShares 20+ Year Treasury ETF,  assetClass: etf,  finnhubSymbol: TLT, hasPriceFeed: true }
-  - { assetId: IEF,   symbol: IEF,   name: iShares 7-10 Year Treasury ETF, assetClass: etf,  finnhubSymbol: IEF, hasPriceFeed: true }
-  - { assetId: HYG,   symbol: HYG,   name: iShares High Yield Corp ETF,    assetClass: etf,  finnhubSymbol: HYG, hasPriceFeed: true }
-  - { assetId: LQD,   symbol: LQD,   name: iShares IG Corporate Bond ETF,  assetClass: etf,  finnhubSymbol: LQD, hasPriceFeed: true }
+  - { assetId: TLT,   symbol: TLT,   name: iShares 20+ Year Treasury ETF,  assetClass: etf,  finnhubSymbol: TLT, twelveDataSymbol: TLT, hasPriceFeed: true }
+  - { assetId: IEF,   symbol: IEF,   name: iShares 7-10 Year Treasury ETF, assetClass: etf,  finnhubSymbol: IEF, twelveDataSymbol: IEF, hasPriceFeed: true }
+  - { assetId: HYG,   symbol: HYG,   name: iShares High Yield Corp ETF,    assetClass: etf,  finnhubSymbol: HYG, twelveDataSymbol: HYG, hasPriceFeed: true }
+  - { assetId: LQD,   symbol: LQD,   name: iShares IG Corporate Bond ETF,  assetClass: etf,  finnhubSymbol: LQD, twelveDataSymbol: LQD, hasPriceFeed: true }
   # Treasury yields: no free intraday feed; SHY/IEF/TLT are the price proxies.
-  - { assetId: US2Y,  symbol: US2Y,  name: US 2-Year Treasury Yield,  assetClass: bond, finnhubSymbol: "", hasPriceFeed: false }
-  - { assetId: US10Y, symbol: US10Y, name: US 10-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", hasPriceFeed: false }
-  - { assetId: US30Y, symbol: US30Y, name: US 30-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", hasPriceFeed: false }
+  - { assetId: US2Y,  symbol: US2Y,  name: US 2-Year Treasury Yield,  assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
+  - { assetId: US10Y, symbol: US10Y, name: US 10-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
+  - { assetId: US30Y, symbol: US30Y, name: US 30-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
 
-  # ── Commodities (OANDA CFD feeds via Finnhub forex endpoint) ───
-  - { assetId: XAUUSD, symbol: XAU/USD, name: Gold Spot,        assetClass: commodity, finnhubSymbol: "OANDA:XAU_USD", hasPriceFeed: true }
-  - { assetId: XAGUSD, symbol: XAG/USD, name: Silver Spot,      assetClass: commodity, finnhubSymbol: "OANDA:XAG_USD", hasPriceFeed: true }
-  - { assetId: WTI,    symbol: WTI,     name: WTI Crude Oil,    assetClass: commodity, finnhubSymbol: "OANDA:WTICO_USD", hasPriceFeed: true }
-  - { assetId: BRENT,  symbol: BRENT,   name: Brent Crude Oil,  assetClass: commodity, finnhubSymbol: "OANDA:BCO_USD",  hasPriceFeed: true }
-  - { assetId: NATGAS, symbol: NATGAS,  name: Natural Gas,      assetClass: commodity, finnhubSymbol: "OANDA:NATGAS_USD", hasPriceFeed: true }
-  - { assetId: COPPER, symbol: COPPER,  name: Copper,           assetClass: commodity, finnhubSymbol: "OANDA:XCU_USD",  hasPriceFeed: true }
+  # ── Commodities (gold spot on TD free; rest via US ETF proxies) ─
+  - { assetId: XAUUSD, symbol: XAU/USD, name: Gold,        assetClass: commodity, finnhubSymbol: "OANDA:XAU_USD",   twelveDataSymbol: "XAU/USD", hasPriceFeed: true }
+  - { assetId: XAGUSD, symbol: XAG/USD, name: "Silver (SLV proxy)",      assetClass: commodity, finnhubSymbol: "OANDA:XAG_USD",   twelveDataSymbol: SLV,  hasPriceFeed: true }
+  - { assetId: WTI,    symbol: WTI,     name: "WTI Crude Oil (USO proxy)",   assetClass: commodity, finnhubSymbol: "OANDA:WTICO_USD", twelveDataSymbol: USO,  hasPriceFeed: true }
+  - { assetId: BRENT,  symbol: BRENT,   name: "Brent Crude Oil (BNO proxy)", assetClass: commodity, finnhubSymbol: "OANDA:BCO_USD",   twelveDataSymbol: BNO,  hasPriceFeed: true }
+  - { assetId: NATGAS, symbol: NATGAS,  name: "Natural Gas (UNG proxy)",     assetClass: commodity, finnhubSymbol: "OANDA:NATGAS_USD", twelveDataSymbol: UNG,  hasPriceFeed: true }
+  - { assetId: COPPER, symbol: COPPER,  name: "Copper (CPER proxy)",         assetClass: commodity, finnhubSymbol: "OANDA:XCU_USD",   twelveDataSymbol: CPER, hasPriceFeed: true }
 
   # ── FX ─────────────────────────────────────────────────────────
-  - { assetId: USDJPY, symbol: USD/JPY, name: US Dollar / Japanese Yen, assetClass: fx, finnhubSymbol: "OANDA:USD_JPY", hasPriceFeed: true }
-  - { assetId: EURUSD, symbol: EUR/USD, name: Euro / US Dollar,         assetClass: fx, finnhubSymbol: "OANDA:EUR_USD", hasPriceFeed: true }
-  - { assetId: GBPUSD, symbol: GBP/USD, name: British Pound / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:GBP_USD", hasPriceFeed: true }
-  - { assetId: USDCHF, symbol: USD/CHF, name: US Dollar / Swiss Franc,  assetClass: fx, finnhubSymbol: "OANDA:USD_CHF", hasPriceFeed: true }
-  - { assetId: AUDUSD, symbol: AUD/USD, name: Australian Dollar / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:AUD_USD", hasPriceFeed: true }
-  - { assetId: NZDUSD, symbol: NZD/USD, name: New Zealand Dollar / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:NZD_USD", hasPriceFeed: true }
-  - { assetId: USDCAD, symbol: USD/CAD, name: US Dollar / Canadian Dollar, assetClass: fx, finnhubSymbol: "OANDA:USD_CAD", hasPriceFeed: true }
-  - { assetId: USDCNY, symbol: USD/CNY, name: US Dollar / Chinese Yuan, assetClass: fx, finnhubSymbol: "OANDA:USD_CNH", hasPriceFeed: true }
-  - { assetId: USDINR, symbol: USD/INR, name: US Dollar / Indian Rupee, assetClass: fx, finnhubSymbol: "OANDA:USD_INR", hasPriceFeed: true }
-  - { assetId: USDBRL, symbol: USD/BRL, name: US Dollar / Brazilian Real, assetClass: fx, finnhubSymbol: "", hasPriceFeed: false }
-  - { assetId: USDMXN, symbol: USD/MXN, name: US Dollar / Mexican Peso, assetClass: fx, finnhubSymbol: "OANDA:USD_MXN", hasPriceFeed: true }
-  - { assetId: DXY,    symbol: DXY,     name: "US Dollar Index (UUP proxy)", assetClass: etf, finnhubSymbol: UUP, hasPriceFeed: true }
+  - { assetId: USDJPY, symbol: USD/JPY, name: US Dollar / Japanese Yen, assetClass: fx, finnhubSymbol: "OANDA:USD_JPY", twelveDataSymbol: "USD/JPY", hasPriceFeed: true }
+  - { assetId: EURUSD, symbol: EUR/USD, name: Euro / US Dollar,         assetClass: fx, finnhubSymbol: "OANDA:EUR_USD", twelveDataSymbol: "EUR/USD", hasPriceFeed: true }
+  - { assetId: GBPUSD, symbol: GBP/USD, name: British Pound / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:GBP_USD", twelveDataSymbol: "GBP/USD", hasPriceFeed: true }
+  - { assetId: USDCHF, symbol: USD/CHF, name: US Dollar / Swiss Franc,  assetClass: fx, finnhubSymbol: "OANDA:USD_CHF", twelveDataSymbol: "USD/CHF", hasPriceFeed: true }
+  - { assetId: AUDUSD, symbol: AUD/USD, name: Australian Dollar / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:AUD_USD", twelveDataSymbol: "AUD/USD", hasPriceFeed: true }
+  - { assetId: NZDUSD, symbol: NZD/USD, name: New Zealand Dollar / US Dollar, assetClass: fx, finnhubSymbol: "OANDA:NZD_USD", twelveDataSymbol: "NZD/USD", hasPriceFeed: true }
+  - { assetId: USDCAD, symbol: USD/CAD, name: US Dollar / Canadian Dollar, assetClass: fx, finnhubSymbol: "OANDA:USD_CAD", twelveDataSymbol: "USD/CAD", hasPriceFeed: true }
+  - { assetId: USDCNY, symbol: USD/CNY, name: US Dollar / Chinese Yuan, assetClass: fx, finnhubSymbol: "OANDA:USD_CNH", twelveDataSymbol: "USD/CNY", hasPriceFeed: true }
+  - { assetId: USDINR, symbol: USD/INR, name: US Dollar / Indian Rupee, assetClass: fx, finnhubSymbol: "OANDA:USD_INR", twelveDataSymbol: "USD/INR", hasPriceFeed: true }
+  - { assetId: USDBRL, symbol: USD/BRL, name: US Dollar / Brazilian Real, assetClass: fx, finnhubSymbol: "", twelveDataSymbol: "USD/BRL", hasPriceFeed: true }
+  - { assetId: USDMXN, symbol: USD/MXN, name: US Dollar / Mexican Peso, assetClass: fx, finnhubSymbol: "OANDA:USD_MXN", twelveDataSymbol: "USD/MXN", hasPriceFeed: true }
+  - { assetId: DXY,    symbol: DXY,     name: "US Dollar Index (UUP proxy)", assetClass: etf, finnhubSymbol: UUP, twelveDataSymbol: UUP, hasPriceFeed: true }
 
   # ── Crypto (24/7 feeds) ────────────────────────────────────────
-  - { assetId: BTC,  symbol: BTC,  name: Bitcoin,   assetClass: crypto, finnhubSymbol: "BINANCE:BTCUSDT",  hasPriceFeed: true }
-  - { assetId: ETH,  symbol: ETH,  name: Ethereum,  assetClass: crypto, finnhubSymbol: "BINANCE:ETHUSDT",  hasPriceFeed: true }
-  - { assetId: SOL,  symbol: SOL,  name: Solana,    assetClass: crypto, finnhubSymbol: "BINANCE:SOLUSDT",  hasPriceFeed: true }
-  - { assetId: AVAX, symbol: AVAX, name: Avalanche, assetClass: crypto, finnhubSymbol: "BINANCE:AVAXUSDT", hasPriceFeed: true }
-  - { assetId: SUI,  symbol: SUI,  name: Sui,       assetClass: crypto, finnhubSymbol: "BINANCE:SUIUSDT",  hasPriceFeed: true }
+  - { assetId: BTC,  symbol: BTC,  name: Bitcoin,   assetClass: crypto, finnhubSymbol: "BINANCE:BTCUSDT",  twelveDataSymbol: "BTC/USD",  hasPriceFeed: true }
+  - { assetId: ETH,  symbol: ETH,  name: Ethereum,  assetClass: crypto, finnhubSymbol: "BINANCE:ETHUSDT",  twelveDataSymbol: "ETH/USD",  hasPriceFeed: true }
+  - { assetId: SOL,  symbol: SOL,  name: Solana,    assetClass: crypto, finnhubSymbol: "BINANCE:SOLUSDT",  twelveDataSymbol: "SOL/USD",  hasPriceFeed: true }
+  - { assetId: AVAX, symbol: AVAX, name: Avalanche, assetClass: crypto, finnhubSymbol: "BINANCE:AVAXUSDT", twelveDataSymbol: "AVAX/USD", hasPriceFeed: true }
+  - { assetId: SUI,  symbol: SUI,  name: Sui,       assetClass: crypto, finnhubSymbol: "BINANCE:SUIUSDT",  twelveDataSymbol: "SUI/USD",  hasPriceFeed: true }

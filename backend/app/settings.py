@@ -16,6 +16,7 @@ COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "")
 MATCHING_QUEUE_URL = os.environ.get("MATCHING_QUEUE_URL", "")
 ABSTRACTION_QUEUE_URL = os.environ.get("ABSTRACTION_QUEUE_URL", "")
 SUMMARY_GENERATOR_ARN = os.environ.get("SUMMARY_GENERATOR_ARN", "")
+BACKFILL_FN_NAME = os.environ.get("BACKFILL_FN_NAME", "")
 
 ENV = os.environ.get("FINWING_ENV", "beta")
 COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", "")
@@ -34,6 +35,7 @@ SONNET_MODEL = "claude-sonnet-4-6"
 ARTICLE_TTL_DAYS = 30
 PRICE_CACHE_TTL_DAYS = 7
 CHAT_WINDOW_TURNS = 20
+BACKFILL_DAYS = 10
 
 
 @lru_cache(maxsize=8)
@@ -54,3 +56,9 @@ def finnhub_api_key() -> str:
     if key := os.environ.get("FINNHUB_API_KEY"):
         return key
     return ssm_param(f"/finwing/{ENV}/finnhub-api-key")
+
+
+def twelvedata_api_key() -> str:
+    if key := os.environ.get("TWELVEDATA_API_KEY"):
+        return key
+    return ssm_param(f"/finwing/{ENV}/twelvedata-api-key")

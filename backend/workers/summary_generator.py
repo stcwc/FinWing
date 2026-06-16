@@ -3,20 +3,14 @@ and tracked-asset price moves, picks the asset or news-only prompt variant,
 calls Sonnet, and writes the summary (never clobbering user edits)."""
 
 import json
-import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import anthropic
-import requests
-from botocore.exceptions import ClientError
 
 from app import settings
 from app.services import db, taxonomy
-from app.services.db import content_table
-from workers.scheduling import is_market_open
+from workers import prices
 
 CROSS_ASSET_MAP = (taxonomy.CONFIG_DIR / "cross_asset_map.json").read_text()
 
@@ -60,93 +54,16 @@ def client() -> anthropic.Anthropic:
     return _client
 
 
-# ── Prices ───────────────────────────────────────────────────────
-
-
-def get_price_cache(asset_id: str, date: str) -> dict | None:
-    resp = content_table().get_item(Key={"PK": f"ASSET#{asset_id}", "SK": f"PRICE#{date}"})
-    item = resp.get("Item")
-    if item:
-        return {
-            "assetId": asset_id,
-            "symbol": item["symbol"],
-            "open": float(item["open"]),
-            "close": float(item["close"]),
-            "move": float(item["move"]),
-        }
-    return None
-
-
-def write_price_cache(asset_id: str, date: str, data: dict) -> None:
-    content_table().put_item(
-        Item={
-            "PK": f"ASSET#{asset_id}",
-            "SK": f"PRICE#{date}",
-            "symbol": data["symbol"],
-            "open": Decimal(str(data["open"])),
-            "close": Decimal(str(data["close"])),
-            "move": Decimal(str(data["move"])),
-            "fetchedAt": db.utcnow(),
-            "ttl": int(time.time()) + settings.PRICE_CACHE_TTL_DAYS * 86400,
-        }
-    )
-
-
-def fetch_price_move(asset_id: str, date: str, tz_name: str) -> dict | None:
-    cached = get_price_cache(asset_id, date)
-    if cached:
-        return cached
-
-    asset = taxonomy.assets().get(asset_id)
-    if not asset or not asset.get("hasPriceFeed") or not asset.get("finnhubSymbol"):
-        return None
-    local_midnight = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=ZoneInfo(tz_name))
-    if not is_market_open(asset["assetClass"], local_midnight):
-        return None
-
-    symbol = asset["finnhubSymbol"]
-    to_ts = int(datetime.now(timezone.utc).timestamp())
-    from_ts = to_ts - 2 * 86400  # cover weekends/quiet sessions
-    is_fx_like = ":" in symbol and symbol.startswith("OANDA")
-    is_crypto = symbol.startswith("BINANCE")
-    endpoint = (
-        "crypto/candle" if is_crypto else "forex/candle" if is_fx_like else "stock/candle"
-    )
-    resp = requests.get(
-        f"https://finnhub.io/api/v1/{endpoint}",
-        params={
-            "symbol": symbol,
-            "resolution": "D",
-            "from": from_ts,
-            "to": to_ts,
-            "token": settings.finnhub_api_key(),
-        },
-        timeout=10,
-    )
-    if resp.status_code != 200:
-        return None
-    data = resp.json()
-    if data.get("s") != "ok" or not data.get("c"):
-        return None
-
-    # Last daily candle = today's session; previous close as the reference
-    close = float(data["c"][-1])
-    ref = float(data["c"][-2]) if len(data["c"]) > 1 else float(data["o"][-1])
-    move = round((close - ref) / ref * 100, 2) if ref else 0.0
-    result = {"assetId": asset_id, "symbol": asset["symbol"], "open": ref, "close": close, "move": move}
-    write_price_cache(asset_id, date, result)
-    return result
-
-
 # ── Articles ─────────────────────────────────────────────────────
 
 
-def fetch_24h_articles(topic_ids: list[str], now_utc: datetime) -> list[dict]:
-    cutoff = (now_utc - timedelta(hours=24)).isoformat()
+def fetch_articles_window(topic_ids: list[str], start_iso: str, end_iso: str) -> list[dict]:
+    """Matched articles for the lens topics within the 24h window ending at the
+    summary moment (works for both the live run and historical backfill)."""
     seen: dict[str, dict] = {}
     for tid in topic_ids[: settings.MAX_TOPICS_PER_LENS]:
-        for item in db.query_topic_feed(tid, limit=30):
-            if item["publishedAt"] >= cutoff and item["articleId"] not in seen:
+        for item in db.query_topic_window(tid, start_iso, end_iso, limit=40):
+            if item["articleId"] not in seen:
                 seen[item["articleId"]] = item
     return sorted(seen.values(), key=lambda i: i["publishedAt"], reverse=True)[:40]
 
@@ -197,7 +114,12 @@ def extract_rationale(body: str) -> str:
 # ── Entry point ──────────────────────────────────────────────────
 
 
-def generate(user_id: str, lens_id: str, date: str, tz_name: str) -> bool:
+def generate(
+    user_id: str, lens_id: str, date: str, tz_name: str, as_of_iso: str | None = None
+) -> bool:
+    """Generate a per-lens summary for `date`. `as_of_iso` is the window end
+    (the summary moment); defaults to now for the live run, or the historical
+    5pm-local moment for backfill."""
     existing = db.get_summary(user_id, lens_id, date)
     if existing and existing.get("editedByUser"):
         return False
@@ -206,18 +128,18 @@ def generate(user_id: str, lens_id: str, date: str, tz_name: str) -> bool:
     if lens is None:
         return False
 
-    now_utc = datetime.now(timezone.utc)
-    articles = fetch_24h_articles(lens["topicIds"], now_utc)
+    as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(timezone.utc)
+    window_start = (as_of - timedelta(hours=24)).isoformat()
+    articles = fetch_articles_window(lens["topicIds"], window_start, as_of.isoformat())
     if not articles and not lens["trackedAssetIds"]:
         return False  # nothing to say
 
-    week_ago = (now_utc - timedelta(days=7)).strftime("%Y-%m-%d")
-    prior = db.list_summaries(user_id, lens_id, week_ago, date)[-3:]
-    prior = [p for p in prior if p["date"] != date]
+    week_ago = (as_of - timedelta(days=8)).strftime("%Y-%m-%d")
+    prior = [p for p in db.list_summaries(user_id, lens_id, week_ago, date) if p["date"] < date][-3:]
 
     asset_moves = []
     for asset_id in lens["trackedAssetIds"]:
-        move = fetch_price_move(asset_id, date, tz_name)
+        move = prices.move_for_date(asset_id, date, tz_name)
         if move:
             asset_moves.append(move)
 
@@ -249,6 +171,12 @@ def generate(user_id: str, lens_id: str, date: str, tz_name: str) -> bool:
 
 
 def handler(event, context):
-    ok = generate(event["userId"], event["lensId"], event["date"], event.get("timezone", "UTC"))
+    ok = generate(
+        event["userId"],
+        event["lensId"],
+        event["date"],
+        event.get("timezone", "UTC"),
+        event.get("asOf"),
+    )
     print(json.dumps({"level": "INFO", "userId": event["userId"], "lensId": event["lensId"],
                       "date": event["date"], "written": ok}))

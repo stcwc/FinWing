@@ -110,6 +110,21 @@ export class PipelineStack extends cdk.Stack {
     contentTable.grantReadWriteData(summaryGen);
     summaryGen.addToRolePolicy(ssmStmt);
 
+    // ── Backfill (async-invoked from POST /lenses) ──────────────
+    const backfill = new lambda.Function(this, "Backfill", {
+      functionName: `finwing-backfill-${envName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "workers.backfill.handler",
+      code: backendCode(),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(300),
+      logRetention: logs.RetentionDays.TWO_WEEKS,
+      environment: baseEnv,
+    });
+    appTable.grantReadWriteData(backfill);
+    contentTable.grantReadWriteData(backfill);
+    backfill.addToRolePolicy(ssmStmt);
+
     // ── Summary scheduler (EventBridge every 5 min) ─────────────
     const scheduler = new lambda.Function(this, "SummaryScheduler", {
       functionName: `finwing-summary-scheduler-${envName}`,

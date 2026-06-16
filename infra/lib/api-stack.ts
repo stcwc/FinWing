@@ -49,6 +49,7 @@ export class ApiStack extends cdk.Stack {
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
         COGNITO_DOMAIN: cognitoDomain,
         ALLOWED_ORIGINS: allowedOrigins.join(","),
+        BACKFILL_FN_NAME: `finwing-backfill-${envName}`,
       },
     });
 
@@ -67,6 +68,16 @@ export class ApiStack extends cdk.Stack {
       new cdk.aws_iam.PolicyStatement({
         actions: ["cognito-idp:InitiateAuth"],
         resources: [userPool.userPoolArn],
+      })
+    );
+    // Async-invoke the backfill function on lens creation (referenced by ARN to
+    // avoid a stack dependency on the pipeline stack).
+    apiFn.addToRolePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: [
+          `arn:aws:lambda:${this.region}:${this.account}:function:finwing-backfill-${envName}`,
+        ],
       })
     );
 

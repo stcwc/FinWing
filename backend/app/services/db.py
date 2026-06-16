@@ -341,6 +341,33 @@ def query_topic_feed(topic_id: str, limit: int = 50, before: str | None = None) 
     return out
 
 
+def query_topic_window(topic_id: str, start_iso: str, end_iso: str, limit: int = 50) -> list[dict]:
+    """Feed-index items for a topic within [start_iso, end_iso] (for historical
+    summary windows / backfill)."""
+    resp = content_table().query(
+        KeyConditionExpression=Key("PK").eq(f"TOPIC#{topic_id}")
+        & Key("SK").between(f"TS#{start_iso}", f"TS#{end_iso}~"),
+        ScanIndexForward=False,
+        Limit=limit,
+    )
+    out = []
+    for item in resp["Items"]:
+        _, published_at, article_id = item["SK"].split("#", 2)
+        out.append(
+            {
+                "articleId": article_id,
+                "topicId": topic_id,
+                "publishedAt": published_at,
+                "title": item["title"],
+                "abstraction": item.get("abstraction"),
+                "excerpt": item.get("excerpt", ""),
+                "source": item.get("source", ""),
+                "url": item.get("url", ""),
+            }
+        )
+    return out
+
+
 def merged_feed(topic_ids: list[str], limit: int = 50, before: str | None = None) -> tuple[list[dict], str | None]:
     """LLD §1.5: query each topic partition, merge, dedupe by articleId,
     newest first."""
