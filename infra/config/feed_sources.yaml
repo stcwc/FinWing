@@ -12,10 +12,6 @@ sources:
     type: rss
     tier: 1
     url: https://www.ecb.europa.eu/rss/press.html
-  - id: bls-releases
-    type: rss
-    tier: 1
-    url: https://www.bls.gov/feed/news_release.rss
   - id: sec-press
     type: rss
     tier: 1
@@ -44,10 +40,6 @@ sources:
     type: rss
     tier: 3
     url: https://www.cnbc.com/id/20910258/device/rss/rss.html
-  - id: cnbc-economy
-    type: rss
-    tier: 3
-    url: https://www.cnbc.com/id/20910255/device/rss/rss.html
   - id: marketwatch-top
     type: rss
     tier: 3
@@ -64,7 +56,3 @@ sources:
     type: rss
     tier: 3
     url: https://oilprice.com/rss/main
-  - id: kitco
-    type: rss
-    tier: 3
-    url: https://www.kitco.com/rss/category/commentaries.xml

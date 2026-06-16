@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_prod:
+        description: "Also deploy to production"
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -75,6 +80,9 @@ jobs:
 
   deploy-prod:
     needs: deploy-beta
+    # Prod deploys only on a manual run (and once prod secrets/domain exist).
+    # Normal pushes to main deploy beta only.
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_prod
     runs-on: ubuntu-latest
     environment: production # requires reviewer approval in GitHub settings
     steps:
