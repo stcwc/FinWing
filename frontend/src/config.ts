@@ -5,7 +5,7 @@ export const cognitoConfig = {
   redirectUri: `${window.location.origin}/auth/callback`,
 };
 
-export function hostedUiSignInUrl(): string {
+export function hostedUiSignInUrl(provider?: string): string {
   const { domain, clientId, redirectUri } = cognitoConfig;
   const params = new URLSearchParams({
     client_id: clientId,
@@ -13,6 +13,8 @@ export function hostedUiSignInUrl(): string {
     scope: "openid email profile",
     redirect_uri: redirectUri,
   });
+  // Skip the IdP chooser and go straight to a provider (e.g. "Google").
+  if (provider) params.set("identity_provider", provider);
   return `https://${domain}/oauth2/authorize?${params.toString()}`;
 }
 

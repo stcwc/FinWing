@@ -80,6 +80,27 @@ export class FoundationStack extends cdk.Stack {
       cognitoDomain: { domainPrefix },
     });
 
+    // Google federation. Client ID + secret come from SSM (set out-of-band so
+    // the secret never lives in source); the IdP is created only when the
+    // params exist. Deploy with `-c enableGoogle=true` after setting them.
+    let googleIdp: cognito.UserPoolIdentityProviderGoogle | undefined;
+    if (this.node.tryGetContext("enableGoogle") !== "false") {
+      googleIdp = new cognito.UserPoolIdentityProviderGoogle(this, "GoogleIdp", {
+        userPool: this.userPool,
+        clientId: ssm.StringParameter.valueForStringParameter(
+          this,
+          `/finwing/${envName}/google-client-id`
+        ),
+        clientSecretValue: cdk.SecretValue.ssmSecure(`/finwing/${envName}/google-client-secret`),
+        scopes: ["openid", "email", "profile"],
+        attributeMapping: {
+          email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+          givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+          familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+        },
+      });
+    }
+
     // The deployed app URL (CloudFront for beta, custom domain for prod).
     // Overridable via `-c appUrl=...`; defaults keep the live beta URL so a
     // redeploy does not revert the Cognito callback/logout URLs.
@@ -106,10 +127,13 @@ export class FoundationStack extends cdk.Stack {
       },
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
-        // Google IdP is attached out-of-band once the OAuth client ID/secret
-        // are in SSM (see infra/README) — keeps secrets out of source.
+        ...(googleIdp ? [cognito.UserPoolClientIdentityProvider.GOOGLE] : []),
       ],
     });
+    // The client must be created after the Google IdP it references.
+    if (googleIdp) {
+      this.userPoolClient.node.addDependency(googleIdp);
+    }
 
     // ── SQS pipeline queues (with DLQs) ─────────────────────────
     const matchingDlq = new sqs.Queue(this, "MatchingDLQ", {
