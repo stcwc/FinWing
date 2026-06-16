@@ -1,7 +1,7 @@
 # Container image for the matching worker and taxonomy seeder.
 # Bundles fastembed + the bge-small-en-v1.5 ONNX model, which is too large for
 # a zip Lambda. (LLD §10)
-# Build context = repo root (so infra/config is reachable).
+# Build context = repo root (so infra/config and the vendored model are reachable).
 FROM public.ecr.aws/lambda/python:3.12
 
 # Copy the two requirements files to distinct names (same basename otherwise).
@@ -13,12 +13,20 @@ COPY backend/app ./app
 COPY backend/workers ./workers
 COPY infra/config ./infra/config
 
-# Pre-download the embedding model into the IMAGE at a non-/tmp path. Lambda
-# mounts an empty ephemeral /tmp at runtime, so anything baked into /tmp is
-# hidden; /opt persists and is readable. The worker copies it to /tmp on cold
-# start (see workers/matching.py). No "|| true" — fail the build if it fails.
+# Reconstruct the HF/fastembed cache layout from the vendored model files so the
+# model is available offline (HuggingFace downloads are rate-limited and flaky
+# in CI). Baked into /opt because Lambda mounts an empty ephemeral /tmp at
+# runtime; the worker copies /opt -> /tmp on cold start (workers/matching.py).
 ENV FINWING_MODEL_CACHE=/opt/fastembed_cache
-RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-small-en-v1.5', cache_dir='/opt/fastembed_cache')"
+ENV HF_HUB_OFFLINE=1
+ENV SNAPSHOT=52398278842ec682c6f32300af41344b1c0b0bb2
+RUN mkdir -p /opt/fastembed_cache/models--qdrant--bge-small-en-v1.5-onnx-q/refs \
+ && mkdir -p /opt/fastembed_cache/models--qdrant--bge-small-en-v1.5-onnx-q/snapshots/$SNAPSHOT \
+ && printf '%s' "$SNAPSHOT" > /opt/fastembed_cache/models--qdrant--bge-small-en-v1.5-onnx-q/refs/main
+COPY backend/models/bge-small-en-v1.5-onnx-q/ /opt/fastembed_cache/models--qdrant--bge-small-en-v1.5-onnx-q/snapshots/52398278842ec682c6f32300af41344b1c0b0bb2/
+
+# Verify the model loads offline at build time (fail fast if the layout is wrong).
+RUN python -c "from fastembed import TextEmbedding; list(TextEmbedding('BAAI/bge-small-en-v1.5', cache_dir='/opt/fastembed_cache').embed(['build-time smoke test']))"
 
 # Default handler; overridden per-function in CDK.
 CMD ["workers.matching.handler"]

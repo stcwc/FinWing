@@ -13,6 +13,7 @@ const ASSET_EXCLUDE = [
   "**/__pycache__",
   "**/*.pyc",
   "backend/tests",
+  "backend/models",
   "frontend",
   "infra/node_modules",
   "infra/cdk.out",
