@@ -126,3 +126,12 @@ class AdminMetrics(BaseModel):
     userCount: int
     signinsToday: int
     activeToday: int
+
+
+class SuggestRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+
+
+class SuggestResponse(BaseModel):
+    topicIds: list[str]
+    assetIds: list[str]

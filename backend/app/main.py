@@ -12,6 +12,7 @@ from app.routers import (
     chat_routes,
     feedback_routes,
     lens_routes,
+    topic_routes,
     user_routes,
 )
 
@@ -28,6 +29,7 @@ app.add_middleware(
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(lens_routes.router)
+app.include_router(topic_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(feedback_routes.router)
 app.include_router(admin_routes.router)
