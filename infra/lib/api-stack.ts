@@ -28,7 +28,10 @@ export class ApiStack extends cdk.Stack {
         ? ["https://finwingnews.com"]
         : ["http://localhost:5173"];
 
-    const cognitoDomain = `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
+    // Hosted-UI domain host (no scheme) for the OAuth token/refresh endpoints.
+    // Must match the domain prefix the Foundation stack creates.
+    const domainPrefix = `finwing-${envName}-${this.account.slice(0, 6)}`;
+    const cognitoDomain = `${domainPrefix}.auth.${this.region}.amazoncognito.com`;
 
     const apiFn = new lambda.Function(this, "ApiHandler", {
       functionName: `finwing-api-${envName}`,
