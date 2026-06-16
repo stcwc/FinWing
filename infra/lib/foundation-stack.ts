@@ -80,10 +80,16 @@ export class FoundationStack extends cdk.Stack {
       cognitoDomain: { domainPrefix },
     });
 
-    const callbackUrls =
-      envName === "prod"
-        ? ["https://finwingnews.com/auth/callback"]
-        : ["http://localhost:5173/auth/callback"];
+    // The deployed app URL (CloudFront for beta, custom domain for prod).
+    // Overridable via `-c appUrl=...`; defaults keep the live beta URL so a
+    // redeploy does not revert the Cognito callback/logout URLs.
+    const appUrl =
+      this.node.tryGetContext("appUrl") ??
+      (envName === "prod"
+        ? "https://finwingnews.com"
+        : "https://d3anxrgbzxir7p.cloudfront.net");
+    const callbackUrls = [`${appUrl}/auth/callback`, "http://localhost:5173/auth/callback"];
+    const logoutUrls = [`${appUrl}/signin`, "http://localhost:5173/signin"];
 
     this.userPoolClient = this.userPool.addClient("WebClient", {
       generateSecret: false,
@@ -96,7 +102,7 @@ export class FoundationStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
         ],
         callbackUrls,
-        logoutUrls: callbackUrls.map((u) => u.replace("/auth/callback", "/signin")),
+        logoutUrls,
       },
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,

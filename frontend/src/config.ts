@@ -15,3 +15,18 @@ export function hostedUiSignInUrl(): string {
   });
   return `https://${domain}/oauth2/authorize?${params.toString()}`;
 }
+
+/**
+ * Cognito Hosted UI logout endpoint. Clears Cognito's own session cookie (not
+ * just the app cookie) so the next sign-in prompts for credentials again, then
+ * redirects back to the app's sign-in page. `logout_uri` must be registered as
+ * an allowed sign-out URL on the app client.
+ */
+export function hostedUiSignOutUrl(): string {
+  const { domain, clientId } = cognitoConfig;
+  const params = new URLSearchParams({
+    client_id: clientId,
+    logout_uri: `${window.location.origin}/signin`,
+  });
+  return `https://${domain}/logout?${params.toString()}`;
+}

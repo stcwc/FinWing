@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { api, ApiError } from "./api/client";
 import { UserProfile } from "./api/types";
+import { hostedUiSignOutUrl } from "./config";
 
 interface AuthState {
   user: UserProfile | null;
@@ -31,8 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await api.post("/auth/logout");
-    setUser(null);
+    // Clear the app cookie, then redirect through Cognito's logout to also
+    // clear its Hosted UI session (otherwise the next sign-in is silent).
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      setUser(null);
+      window.location.href = hostedUiSignOutUrl();
+    }
   }
 
   useEffect(() => {
