@@ -10,7 +10,19 @@ from app.services import db
 CHAT_SYSTEM = """You are FinWing's financial assistant. The user's investment context is below.
 You may discuss news, market dynamics, and financial topics freely.
 Never give buy/sell recommendations or financial advice.
-Keep answers concise and grounded in the provided context where relevant."""
+Keep answers concise and grounded in the provided context where relevant.
+
+You can search the web and fetch specific URLs when the user asks about current
+events, recent prices/news, or anything beyond the provided context. Search when
+fresh information would change the answer; cite the sources you used. Don't search
+for things you already know or that are answered by the user's context."""
+
+# Anthropic server-side tools — executed on Anthropic's infrastructure; we only
+# declare them. max_uses bounds cost per turn.
+WEB_TOOLS = [
+    {"type": "web_search_20260209", "name": "web_search", "max_uses": 5},
+    {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 5},
+]
 
 
 def _client() -> anthropic.Anthropic:
@@ -74,14 +86,28 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     turn_content = message
     if attachments:
         turn_content = f"{_format_attachments(attachments)}\n\nQuestion: {message}"
-    messages = window + [{"role": "user", "content": turn_content}]
-    resp = _client().messages.create(
-        model=settings.HAIKU_MODEL,
-        max_tokens=1024,
-        system=system_blocks,
-        messages=messages,
-    )
-    answer = resp.content[0].text.strip()
+    messages: list = window + [{"role": "user", "content": turn_content}]
+
+    client = _client()
+    # The server runs its own loop for web search/fetch; if it hits the internal
+    # iteration limit it returns stop_reason="pause_turn" — re-send to continue.
+    resp = None
+    for _ in range(6):
+        resp = client.messages.create(
+            model=settings.SONNET_MODEL,
+            max_tokens=1500,
+            system=system_blocks,
+            tools=WEB_TOOLS,
+            messages=messages,
+        )
+        if resp.stop_reason != "pause_turn":
+            break
+        messages.append({"role": "assistant", "content": resp.content})
+
+    # Final answer is the text block(s); other blocks are server tool use/results.
+    answer = "".join(b.text for b in resp.content if b.type == "text").strip()
+    if not answer:
+        answer = "I couldn't find an answer to that. Please try rephrasing."
     db.append_chat_turn(user_id, "assistant", answer)
 
     total = int(state.get("totalTurns", 0)) + 2
