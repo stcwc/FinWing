@@ -105,7 +105,11 @@ def abstract_article(article_id: str) -> bool:
 def handler(event, context):
     done = 0
     for record in event.get("Records", []):
-        body = json.loads(record["body"])
+        try:
+            body = json.loads(record["body"])
+        except (json.JSONDecodeError, KeyError):
+            print(json.dumps({"level": "WARN", "skip": "malformed message"}))
+            continue  # one bad message must not fail the whole batch
         if abstract_article(body["articleId"]):
             done += 1
     print(json.dumps({"level": "INFO", "abstracted": done}))
