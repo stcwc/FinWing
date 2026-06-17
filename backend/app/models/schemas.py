@@ -8,12 +8,16 @@ from pydantic import BaseModel, Field, field_validator
 from app import settings
 
 
+LANGUAGES = {"en", "zh"}
+
+
 class UserProfile(BaseModel):
     userId: str
     email: str
     role: str = "user"
     timezone: str = "America/Los_Angeles"
     summaryTimePref: str = "17:00"
+    language: str = "en"
     lensCount: int = 0
     firstSignIn: bool = False
 
@@ -21,6 +25,16 @@ class UserProfile(BaseModel):
 class UserUpdate(BaseModel):
     timezone: Optional[str] = None
     summaryTimePref: Optional[str] = None
+    language: Optional[str] = None
+
+    @field_validator("language")
+    @classmethod
+    def valid_language(cls, v):
+        if v is None:
+            return v
+        if v not in LANGUAGES:
+            raise ValueError("language must be one of: en, zh")
+        return v
 
     @field_validator("summaryTimePref")
     @classmethod
@@ -73,7 +87,9 @@ class FeedItem(BaseModel):
     topicId: str
     publishedAt: str
     title: str
+    titleZh: Optional[str] = None
     abstraction: Optional[str] = None
+    abstractionZh: Optional[str] = None
     excerpt: str
     source: str
     url: str

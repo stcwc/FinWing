@@ -26,6 +26,7 @@ def handler(event, context):
 
     tz_name = profile.get("timezone", "America/Los_Angeles")
     pref = profile.get("summaryTimePref", "17:00")
+    language = profile.get("language", "en")
     tz = ZoneInfo(tz_name)
     h, m = map(int, pref.split(":"))
     now_local = datetime.now(tz)
@@ -51,7 +52,9 @@ def handler(event, context):
         date_str = d.strftime("%Y-%m-%d")
         as_of_iso = as_of_local.astimezone(timezone.utc).isoformat()
         try:
-            if summary_generator.generate(user_id, lens_id, date_str, tz_name, as_of_iso):
+            if summary_generator.generate(
+                user_id, lens_id, date_str, tz_name, as_of_iso, language
+            ):
                 written += 1
         except Exception as e:  # noqa: BLE001 — one bad day shouldn't abort the rest
             print(json.dumps({"level": "WARN", "date": date_str, "error": str(e)}))

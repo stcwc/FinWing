@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { useI18n } from "../i18n";
 import { Toast } from "../components/ui";
 
 export default function Feedback() {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -13,9 +15,9 @@ export default function Feedback() {
     try {
       await api.post("/feedback", { text: text.trim() });
       setText("");
-      setToast("Thanks — your feedback was sent.");
+      setToast(t("fb.sent"));
     } catch {
-      setToast("Could not send feedback. Please try again.");
+      setToast(t("fb.failed"));
     } finally {
       setBusy(false);
     }
@@ -23,22 +25,19 @@ export default function Feedback() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="mb-2 text-xl font-semibold">Feedback</h1>
-      <p className="mb-4 text-sm text-ink-400">
-        Found a bug, hit a limit, or have an idea? Send it here — only the FinWing admin
-        sees this.
-      </p>
+      <h1 className="mb-2 text-xl font-semibold">{t("fb.title")}</h1>
+      <p className="mb-4 text-sm text-ink-400">{t("fb.subtitle")}</p>
       <div className="card p-4">
         <textarea
           className="input min-h-40"
           value={text}
           maxLength={5000}
-          placeholder="What's on your mind?"
+          placeholder={t("fb.placeholder")}
           onChange={(e) => setText(e.target.value)}
         />
         <div className="mt-3 flex justify-end">
           <button className="btn-primary" disabled={busy || !text.trim()} onClick={submit}>
-            {busy ? "Sending…" : "Send feedback"}
+            {busy ? t("fb.sending") : t("fb.send")}
           </button>
         </div>
       </div>

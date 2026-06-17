@@ -1,5 +1,6 @@
 import { api } from "../api/client";
 import { useAsync } from "../api/hooks";
+import { useI18n } from "../i18n";
 import { EmptyState, Spinner, timeAgo } from "../components/ui";
 
 interface Metrics {
@@ -21,18 +22,19 @@ export default function Admin() {
     []
   );
 
+  const { t } = useI18n();
   if (metrics.loading) return <Spinner />;
 
   const stats = [
-    { label: "Total users", value: metrics.data?.userCount ?? 0 },
-    { label: "Sign-ins today", value: metrics.data?.signinsToday ?? 0 },
-    { label: "Active today", value: metrics.data?.activeToday ?? 0 },
+    { label: t("admin.totalUsers"), value: metrics.data?.userCount ?? 0 },
+    { label: t("admin.signinsToday"), value: metrics.data?.signinsToday ?? 0 },
+    { label: t("admin.activeToday"), value: metrics.data?.activeToday ?? 0 },
   ];
 
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="mb-4 text-xl font-semibold">Admin</h1>
+        <h1 className="mb-4 text-xl font-semibold">{t("admin.title")}</h1>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {stats.map((s) => (
             <div key={s.label} className="card p-5">
@@ -44,11 +46,11 @@ export default function Admin() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Feedback</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("admin.feedback")}</h2>
         {feedback.loading ? (
           <Spinner />
         ) : feedback.data?.items.length === 0 ? (
-          <EmptyState title="No feedback yet" />
+          <EmptyState title={t("admin.noFeedback")} />
         ) : (
           <div className="space-y-3">
             {feedback.data!.items.map((f, i) => (

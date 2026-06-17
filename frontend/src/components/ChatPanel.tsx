@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { ARTICLE_DND_TYPE, ArticleAttachment, ChatTurn } from "../api/types";
+import { useI18n } from "../i18n";
 
 export function ChatPanel({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -54,12 +56,12 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
     const display =
       message ||
       (sentAttachments.length === 1
-        ? `Tell me about: ${sentAttachments[0].title}`
-        : `Discuss these ${sentAttachments.length} articles`);
+        ? sentAttachments[0].title
+        : `${sentAttachments.length} ✕ ${t("chat.attached")}`);
 
     setInput("");
     setAttachments([]);
-    setTurns((t) => [...t, { role: "user", content: display }]);
+    setTurns((prev) => [...prev, { role: "user", content: display }]);
     setSending(true);
     try {
       const res = await api.post<{ response: string }>("/chat/messages", {
@@ -71,12 +73,9 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
           url: a.url,
         })),
       });
-      setTurns((t) => [...t, { role: "assistant", content: res.response }]);
+      setTurns((prev) => [...prev, { role: "assistant", content: res.response }]);
     } catch {
-      setTurns((t) => [
-        ...t,
-        { role: "assistant", content: "Sorry — something went wrong. Please try again." },
-      ]);
+      setTurns((prev) => [...prev, { role: "assistant", content: t("chat.error") }]);
     } finally {
       setSending(false);
     }
@@ -90,7 +89,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
       className="fixed right-0 top-0 z-40 flex h-screen w-full max-w-md flex-col border-l border-ink-200 bg-white shadow-xl"
     >
       <div className="flex items-center justify-between border-b border-ink-200 px-4 py-3">
-        <div className="font-semibold">Chat</div>
+        <div className="font-semibold">{t("chat.title")}</div>
         <button onClick={onClose} className="text-ink-400 hover:text-ink-800">
           ✕
         </button>
@@ -98,33 +97,30 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
 
       <div className="relative flex-1 space-y-3 overflow-y-auto p-4">
         {turns.length === 0 && attachments.length === 0 && (
-          <p className="text-sm text-ink-400">
-            Ask anything about your lenses, topics, and recent summaries. Tip: drag a news
-            tile from the feed in here to discuss it.
-          </p>
+          <p className="text-sm text-ink-400">{t("chat.empty")}</p>
         )}
-        {turns.map((t, i) => (
+        {turns.map((turn, i) => (
           <div
             key={i}
             className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-              t.role === "user"
+              turn.role === "user"
                 ? "ml-auto bg-wing-600 text-white"
                 : "bg-ink-100 text-ink-800"
             }`}
           >
-            {t.content}
+            {turn.content}
           </div>
         ))}
         {sending && (
           <div className="max-w-[85%] rounded-2xl bg-ink-100 px-3 py-2 text-sm text-ink-400">
-            thinking…
+            {t("chat.thinking")}
           </div>
         )}
         <div ref={endRef} />
 
         {dragOver && (
           <div className="pointer-events-none absolute inset-2 flex items-center justify-center rounded-xl border-2 border-dashed border-wing-500 bg-wing-500/5 text-sm font-medium text-wing-600">
-            Drop the news tile to add it as context
+            {t("chat.drop")}
           </div>
         )}
       </div>
@@ -133,7 +129,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
       {attachments.length > 0 && (
         <div className="border-t border-ink-200 px-3 pt-3">
           <div className="mb-1 text-xs font-medium text-ink-400">
-            Attached context ({attachments.length})
+            {t("chat.attached")} ({attachments.length})
           </div>
           <div className="flex max-h-32 flex-col gap-2 overflow-y-auto">
             {attachments.map((a) => (
@@ -171,11 +167,13 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
               }
             }}
             rows={1}
-            placeholder={attachments.length > 0 ? "Ask about the attached news…" : "Message…"}
+            placeholder={
+              attachments.length > 0 ? t("chat.placeholderAttached") : t("chat.placeholder")
+            }
             className="input resize-none"
           />
           <button onClick={send} disabled={sending} className="btn-primary">
-            Send
+            {t("chat.send")}
           </button>
         </div>
       </div>

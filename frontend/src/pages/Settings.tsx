@@ -4,10 +4,13 @@ import { useAsync } from "../api/hooks";
 import { useAuth } from "../auth";
 import { Asset, Lens, Topic, UserProfile } from "../api/types";
 import { LensComposer } from "../components/LensComposer";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { useI18n } from "../i18n";
 import { EmptyState, Modal, Spinner, Toast } from "../components/ui";
 
 export default function Settings() {
   const { refresh } = useAuth();
+  const { t } = useI18n();
   const profile = useAsync(() => api.get<UserProfile>("/users/me"), []);
   const lenses = useAsync(() => api.get<Lens[]>("/lenses"), []);
   const topics = useAsync(() => loadStatic<Topic[]>("taxonomy.json"), []);
@@ -37,7 +40,7 @@ export default function Settings() {
   }
 
   async function removeLens(lens: Lens) {
-    if (!confirm(`Delete lens "${lens.name}"? Past summaries are kept.`)) return;
+    if (!confirm(t("settings.deleteConfirm", { name: lens.name }))) return;
     await api.del(`/lenses/${lens.lensId}`);
     lenses.reload();
     refresh();
@@ -46,25 +49,29 @@ export default function Settings() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="mb-4 text-xl font-semibold">Settings</h1>
-        <SummaryTimeCard profile={profile.data!} onSaved={() => setToast("Saved.")} />
+        <h1 className="mb-4 text-xl font-semibold">{t("settings.title")}</h1>
+        <div className="card mb-4 flex items-center justify-between p-4">
+          <span className="text-sm font-medium">{t("settings.language")}</span>
+          <LanguageToggle />
+        </div>
+        <SummaryTimeCard profile={profile.data!} onSaved={() => setToast(t("settings.saved"))} />
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Lenses</h2>
+          <h2 className="text-lg font-semibold">{t("settings.lenses")}</h2>
           <button
             className="btn-primary"
             disabled={atCap}
             onClick={() => setEditing("new")}
-            title={atCap ? "Maximum 5 lenses" : undefined}
+            title={atCap ? t("settings.maxLenses") : undefined}
           >
-            + New lens
+            {t("settings.newLens")}
           </button>
         </div>
 
         {lenses.data?.length === 0 ? (
-          <EmptyState title="No lenses yet" hint="Create your first lens above." />
+          <EmptyState title={t("feed.noLenses")} hint={t("feed.createInSettings")} />
         ) : (
           <div className="space-y-3">
             {lenses.data!.map((lens) => (
@@ -72,18 +79,20 @@ export default function Settings() {
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{lens.name}</div>
                   <div className="mt-0.5 truncate text-xs text-ink-400">
-                    {lens.topicIds.length} topics · {lens.trackedAssetIds.length} tracked
-                    assets
+                    {t("settings.topicsAssets", {
+                      t: lens.topicIds.length,
+                      a: lens.trackedAssetIds.length,
+                    })}
                   </div>
                 </div>
                 <button className="btn-outline" onClick={() => setEditing(lens)}>
-                  Edit
+                  {t("settings.edit")}
                 </button>
                 <button
                   className="btn-ghost text-red-600 hover:bg-red-50"
                   onClick={() => removeLens(lens)}
                 >
-                  Delete
+                  {t("settings.delete")}
                 </button>
               </div>
             ))}
@@ -93,7 +102,11 @@ export default function Settings() {
 
       {editing && (
         <Modal
-          title={editing === "new" ? "New lens" : `Edit ${editing.name}`}
+          title={
+            editing === "new"
+              ? t("settings.newLensTitle")
+              : t("settings.editLens", { name: editing.name })
+          }
           onClose={() => setEditing(null)}
         >
           <LensComposer
@@ -105,7 +118,7 @@ export default function Settings() {
             initialName={editing === "new" ? "" : editing.name}
             initialTopicIds={editing === "new" ? [] : editing.topicIds}
             initialAssetIds={editing === "new" ? [] : editing.trackedAssetIds}
-            submitLabel={editing === "new" ? "Create lens" : "Save changes"}
+            submitLabel={editing === "new" ? t("lens.create") : t("lens.save")}
             onSubmit={saveLens}
           />
         </Modal>
@@ -122,6 +135,7 @@ function SummaryTimeCard({
   profile: UserProfile;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [time, setTime] = useState(profile.summaryTimePref);
   const [tz, setTz] = useState(profile.timezone);
   const [busy, setBusy] = useState(false);
@@ -138,10 +152,10 @@ function SummaryTimeCard({
 
   return (
     <div className="card p-4">
-      <div className="mb-3 text-sm font-medium">Daily summary delivery</div>
+      <div className="mb-3 text-sm font-medium">{t("settings.delivery")}</div>
       <div className="flex flex-wrap items-end gap-4">
         <label className="text-sm">
-          <span className="mb-1 block text-ink-400">Time (local)</span>
+          <span className="mb-1 block text-ink-400">{t("settings.time")}</span>
           <input
             type="time"
             className="input w-36"
@@ -150,7 +164,7 @@ function SummaryTimeCard({
           />
         </label>
         <label className="flex-1 text-sm">
-          <span className="mb-1 block text-ink-400">Timezone (IANA)</span>
+          <span className="mb-1 block text-ink-400">{t("settings.timezone")}</span>
           <input
             className="input"
             value={tz}
@@ -159,7 +173,7 @@ function SummaryTimeCard({
           />
         </label>
         <button className="btn-primary" disabled={busy} onClick={save}>
-          {busy ? "Saving…" : "Save"}
+          {busy ? t("settings.saving") : t("settings.save")}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
+import { useI18n } from "./i18n";
 import { Spinner } from "./components/ui";
 import { Shell } from "./components/Shell";
 import SignIn from "./pages/SignIn";
@@ -13,12 +14,13 @@ import Admin from "./pages/Admin";
 
 export default function App() {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
 
   return (
     <Routes>
       <Route path="/auth/callback" element={<AuthCallback />} />
       {loading ? (
-        <Route path="*" element={<Spinner label="Loading FinWing…" />} />
+        <Route path="*" element={<Spinner label={t("common.loading")} />} />
       ) : !user ? (
         <>
           <Route path="/signin" element={<SignIn />} />

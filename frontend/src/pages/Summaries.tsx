@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { api, ApiError } from "../api/client";
 import { useAsync } from "../api/hooks";
 import { Lens, Summary } from "../api/types";
+import { useI18n } from "../i18n";
 import { EmptyState, Modal, Spinner, Toast } from "../components/ui";
 
 function monthBounds(d: Date) {
@@ -12,6 +13,8 @@ function monthBounds(d: Date) {
 }
 
 export default function Summaries() {
+  const { t, lang } = useI18n();
+  const locale = lang === "zh" ? "zh-CN" : "en-US";
   const lenses = useAsync(() => api.get<Lens[]>("/lenses"), []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date());
@@ -32,10 +35,13 @@ export default function Summaries() {
 
   if (lenses.loading) return <Spinner />;
   if (!lenses.data?.length)
-    return <EmptyState title="No lenses yet" hint="Create one in Settings." />;
+    return <EmptyState title={t("feed.noLenses")} hint={t("feed.createInSettings")} />;
 
   const byDate = new Map((summaries.data ?? []).map((s) => [s.date, s]));
-  const monthLabel = month.toLocaleString("default", { month: "long", year: "numeric" });
+  const monthLabel = month.toLocaleString(locale, { month: "long", year: "numeric" });
+  const weekdays = Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 7 + i).toLocaleString(locale, { weekday: "short" })
+  );
 
   return (
     <div>
@@ -75,7 +81,7 @@ export default function Summaries() {
 
       <div className="card p-4">
         <div className="mb-2 grid grid-cols-7 text-center text-xs font-medium text-ink-400">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          {weekdays.map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
@@ -138,6 +144,7 @@ function SummaryModal({
   onClose: () => void;
   onSaved: (s: Summary) => void;
 }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(summary.body);
   const [busy, setBusy] = useState(false);
@@ -154,8 +161,8 @@ function SummaryModal({
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "VERSION_CONFLICT"
-          ? "This summary changed elsewhere. Close and reopen to get the latest."
-          : "Could not save."
+          ? t("sum.conflict")
+          : t("sum.saveFailed")
       );
     } finally {
       setBusy(false);
@@ -193,15 +200,15 @@ function SummaryModal({
         {editing ? (
           <>
             <button className="btn-ghost" onClick={() => setEditing(false)}>
-              Cancel
+              {t("sum.cancel")}
             </button>
             <button className="btn-primary" disabled={busy} onClick={save}>
-              {busy ? "Saving…" : "Save"}
+              {busy ? t("sum.saving") : t("sum.save")}
             </button>
           </>
         ) : (
           <button className="btn-outline" onClick={() => setEditing(true)}>
-            Edit
+            {t("sum.edit")}
           </button>
         )}
       </div>

@@ -55,8 +55,15 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     # attached article content is injected into this turn only.
     db.append_chat_turn(user_id, "user", message)
 
+    language = (db.get_user(user_id) or {}).get("language", "en")
+    lang_line = (
+        "Respond in Simplified Chinese (简体中文)."
+        if language == "zh"
+        else "Respond in English."
+    )
     system_blocks = [
         {"type": "text", "text": CHAT_SYSTEM, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": lang_line},
         {"type": "text", "text": _financial_context(user_id)},
     ]
     if state.get("runningSummary"):

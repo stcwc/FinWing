@@ -113,5 +113,14 @@ def test_feedback_and_admin(client):
     assert metrics["userCount"] == 1
 
 
+def test_language_preference(client):
+    client.post("/users/me")
+    assert client.get("/users/me").json()["language"] == "en"  # default
+    assert client.patch("/users/me", json={"language": "zh"}).status_code == 200
+    assert client.get("/users/me").json()["language"] == "zh"
+    # invalid language rejected by validation
+    assert client.patch("/users/me", json={"language": "fr"}).status_code == 422
+
+
 def test_health(client):
     assert client.get("/health").json()["status"] == "ok"

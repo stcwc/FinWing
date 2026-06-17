@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import { Asset, Topic, TopicSuggestion } from "../api/types";
+import { useI18n } from "../i18n";
 import { LensEditor } from "./LensEditor";
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
  * the editor (key bump) with new initial values — the user can still edit them.
  */
 export function LensComposer(props: Props) {
+  const { t } = useI18n();
   const [interests, setInterests] = useState("");
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function LensComposer(props: Props) {
     try {
       const res = await api.post<TopicSuggestion>("/topics/suggest", { text });
       if (res.topicIds.length === 0 && res.assetIds.length === 0) {
-        setError("Couldn't find matching topics — try describing your interests differently.");
+        setError(t("compose.suggestFailed"));
         return;
       }
       setSeed((s) => ({
@@ -64,16 +66,13 @@ export function LensComposer(props: Props) {
     <div>
       {props.showSuggest && (
         <div className="mb-5 rounded-lg border border-dashed border-ink-200 bg-ink-50 p-4">
-          <label className="mb-1 block text-sm font-medium">Tell us your interests</label>
-          <p className="mb-3 text-xs text-ink-400">
-            In plain words — e.g. “US national debt and the US dollar.” We’ll suggest the
-            relevant topics (and related drivers), which you can then tweak.
-          </p>
+          <label className="mb-1 block text-sm font-medium">{t("compose.interestsLabel")}</label>
+          <p className="mb-3 text-xs text-ink-400">{t("compose.interestsHint")}</p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <textarea
               className="input min-h-[44px] flex-1 resize-none"
               rows={1}
-              placeholder="What are you interested in?"
+              placeholder={t("compose.interestsPlaceholder")}
               value={interests}
               maxLength={500}
               onChange={(e) => setInterests(e.target.value)}
@@ -86,15 +85,18 @@ export function LensComposer(props: Props) {
               disabled={suggesting || !interests.trim()}
               onClick={suggest}
             >
-              {suggesting ? "Thinking…" : "✨ Suggest topics"}
+              {suggesting ? t("compose.thinking") : t("compose.suggest")}
             </button>
           </div>
           {seed.suggested && (
             <p className="mt-2 text-xs text-wing-600">
-              Suggested {seed.topicIds.length} topic{seed.topicIds.length === 1 ? "" : "s"}
+              {t("compose.suggestedPrefix")} {seed.topicIds.length}{" "}
+              {seed.topicIds.length === 1 ? t("compose.topic") : t("compose.topics")}
               {seed.assetIds.length > 0 &&
-                ` and ${seed.assetIds.length} asset${seed.assetIds.length === 1 ? "" : "s"}`}{" "}
-              below — adjust anything you like.
+                ` + ${seed.assetIds.length} ${
+                  seed.assetIds.length === 1 ? t("compose.asset") : t("compose.assets")
+                }`}{" "}
+              {t("compose.suggestedSuffix")}
             </p>
           )}
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}

@@ -4,6 +4,7 @@ export interface UserProfile {
   role: string;
   timezone: string;
   summaryTimePref: string;
+  language: "en" | "zh";
   lensCount: number;
   firstSignIn?: boolean;
 }
@@ -22,7 +23,9 @@ export interface FeedItem {
   topicId: string;
   publishedAt: string;
   title: string;
+  titleZh?: string | null;
   abstraction: string | null;
+  abstractionZh?: string | null;
   excerpt: string;
   source: string;
   url: string;

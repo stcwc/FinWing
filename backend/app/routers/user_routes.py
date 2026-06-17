@@ -25,6 +25,7 @@ def create_me(user: dict = Depends(auth.current_user)):
         role=profile.get("role", "user"),
         timezone=profile["timezone"],
         summaryTimePref=profile["summaryTimePref"],
+        language=profile.get("language", "en"),
         lensCount=int(profile.get("lensCount", 0)),
         firstSignIn=created,
     )
@@ -41,6 +42,7 @@ def get_me(user: dict = Depends(auth.current_user)):
         role=profile.get("role", "user"),
         timezone=profile["timezone"],
         summaryTimePref=profile["summaryTimePref"],
+        language=profile.get("language", "en"),
         lensCount=int(profile.get("lensCount", 0)),
     )
 

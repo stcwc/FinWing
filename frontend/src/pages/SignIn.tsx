@@ -1,4 +1,6 @@
 import { hostedUiSignInUrl } from "../config";
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "../components/LanguageToggle";
 
 function GoogleIcon() {
   return (
@@ -12,32 +14,27 @@ function GoogleIcon() {
 }
 
 export default function SignIn() {
+  const { t } = useI18n();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-ink-50 to-ink-100 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-ink-50 to-ink-100 px-4">
+      <div className="absolute right-4 top-4">
+        <LanguageToggle />
+      </div>
       <div className="card w-full max-w-sm p-8 text-center">
         <img src="/finwing-logo.png" alt="FinWing" className="mx-auto mb-3 h-11 w-auto" />
-        <p className="mt-2 text-sm text-ink-400">
-          Your financial news, gathered, filtered, and summarized — so you keep track
-          without the doom-scroll.
-        </p>
-        <a
-          href={hostedUiSignInUrl("Google")}
-          className="btn-outline mt-6 w-full"
-        >
-          <GoogleIcon /> Continue with Google
+        <p className="mt-2 text-sm text-ink-400">{t("signin.tagline")}</p>
+        <a href={hostedUiSignInUrl("Google")} className="btn-outline mt-6 w-full">
+          <GoogleIcon /> {t("signin.google")}
         </a>
         <div className="my-3 flex items-center gap-3 text-xs text-ink-400">
           <span className="h-px flex-1 bg-ink-200" />
-          or
+          {t("signin.or")}
           <span className="h-px flex-1 bg-ink-200" />
         </div>
         <a href={hostedUiSignInUrl()} className="btn-primary w-full">
-          Sign in with email
+          {t("signin.email")}
         </a>
-        <p className="mt-4 text-xs text-ink-400">
-          By continuing you agree this tool provides information only, not financial
-          advice.
-        </p>
+        <p className="mt-4 text-xs text-ink-400">{t("signin.disclaimer")}</p>
       </div>
     </div>
   );

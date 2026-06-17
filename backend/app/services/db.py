@@ -100,6 +100,7 @@ def create_user(user_id: str, email: str, auth_provider: str, tz: str = "America
                             "role": {"S": "user"},
                             "timezone": {"S": tz},
                             "summaryTimePref": {"S": "17:00"},
+                            "language": {"S": "en"},
                             "nextSummaryAt": {"S": next_at},
                             "lensCount": {"N": "0"},
                             "signupAt": {"S": now},
@@ -148,13 +149,19 @@ def update_user(user_id: str, fields: dict) -> None:
     tz = fields.get("timezone", profile["timezone"])
     pref = fields.get("summaryTimePref", profile["summaryTimePref"])
     next_at = compute_next_summary_at(pref, tz)
+    expr = "SET #tz = :tz, summaryTimePref = :pref, nextSummaryAt = :next, GSI2SK = :next"
+    values = {":tz": tz, ":pref": pref, ":next": next_at}
+    if "language" in fields:
+        expr += ", #lang = :lang"
+        values[":lang"] = fields["language"]
+    names = {"#tz": "timezone"}
+    if "language" in fields:
+        names["#lang"] = "language"
     app_table().update_item(
         Key={"PK": f"USER#{user_id}", "SK": "PROFILE"},
-        UpdateExpression=(
-            "SET #tz = :tz, summaryTimePref = :pref, nextSummaryAt = :next, GSI2SK = :next"
-        ),
-        ExpressionAttributeNames={"#tz": "timezone"},
-        ExpressionAttributeValues={":tz": tz, ":pref": pref, ":next": next_at},
+        UpdateExpression=expr,
+        ExpressionAttributeNames=names,
+        ExpressionAttributeValues=values,
     )
 
 
@@ -314,6 +321,22 @@ def delete_lens(user_id: str, lens_id: str) -> None:
 # ── Feed ─────────────────────────────────────────────────────────
 
 
+def _feed_item_out(item: dict, topic_id: str) -> dict:
+    _, published_at, article_id = item["SK"].split("#", 2)
+    return {
+        "articleId": article_id,
+        "topicId": topic_id,
+        "publishedAt": published_at,
+        "title": item["title"],
+        "titleZh": item.get("titleZh"),
+        "abstraction": item.get("abstraction"),
+        "abstractionZh": item.get("abstractionZh"),
+        "excerpt": item.get("excerpt", ""),
+        "source": item.get("source", ""),
+        "url": item.get("url", ""),
+    }
+
+
 def query_topic_feed(topic_id: str, limit: int = 50, before: str | None = None) -> list[dict]:
     cond = Key("PK").eq(f"TOPIC#{topic_id}")
     if before:
@@ -323,22 +346,7 @@ def query_topic_feed(topic_id: str, limit: int = 50, before: str | None = None) 
     resp = content_table().query(
         KeyConditionExpression=cond, ScanIndexForward=False, Limit=limit
     )
-    out = []
-    for item in resp["Items"]:
-        _, published_at, article_id = item["SK"].split("#", 2)
-        out.append(
-            {
-                "articleId": article_id,
-                "topicId": topic_id,
-                "publishedAt": published_at,
-                "title": item["title"],
-                "abstraction": item.get("abstraction"),
-                "excerpt": item.get("excerpt", ""),
-                "source": item.get("source", ""),
-                "url": item.get("url", ""),
-            }
-        )
-    return out
+    return [_feed_item_out(item, topic_id) for item in resp["Items"]]
 
 
 def query_topic_window(topic_id: str, start_iso: str, end_iso: str, limit: int = 50) -> list[dict]:
@@ -350,22 +358,7 @@ def query_topic_window(topic_id: str, start_iso: str, end_iso: str, limit: int =
         ScanIndexForward=False,
         Limit=limit,
     )
-    out = []
-    for item in resp["Items"]:
-        _, published_at, article_id = item["SK"].split("#", 2)
-        out.append(
-            {
-                "articleId": article_id,
-                "topicId": topic_id,
-                "publishedAt": published_at,
-                "title": item["title"],
-                "abstraction": item.get("abstraction"),
-                "excerpt": item.get("excerpt", ""),
-                "source": item.get("source", ""),
-                "url": item.get("url", ""),
-            }
-        )
-    return out
+    return [_feed_item_out(item, topic_id) for item in resp["Items"]]
 
 
 def merged_feed(topic_ids: list[str], limit: int = 50, before: str | None = None) -> tuple[list[dict], str | None]:

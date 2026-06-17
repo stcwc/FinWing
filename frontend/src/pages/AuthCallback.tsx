@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { cognitoConfig } from "../config";
+import { useI18n } from "../i18n";
 import { Spinner } from "../components/ui";
 
 export default function AuthCallback() {
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
 
@@ -37,5 +39,5 @@ export default function AuthCallback() {
       </div>
     );
   }
-  return <Spinner label="Signing you in…" />;
+  return <Spinner label={t("common.signingIn")} />;
 }

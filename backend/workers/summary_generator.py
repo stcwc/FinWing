@@ -44,6 +44,16 @@ Rules:
 
 Length: about 250 words."""
 
+
+def _lang_directive(language: str) -> str:
+    if language == "zh":
+        return (
+            "\n\nWrite the ENTIRE summary in Simplified Chinese (简体中文), including the "
+            "section headers (translate the markdown headers to Chinese). Keep asset "
+            "symbols and numbers as-is."
+        )
+    return "\n\nWrite the summary in English."
+
 _client = None
 
 
@@ -115,11 +125,17 @@ def extract_rationale(body: str) -> str:
 
 
 def generate(
-    user_id: str, lens_id: str, date: str, tz_name: str, as_of_iso: str | None = None
+    user_id: str,
+    lens_id: str,
+    date: str,
+    tz_name: str,
+    as_of_iso: str | None = None,
+    language: str | None = None,
 ) -> bool:
     """Generate a per-lens summary for `date`. `as_of_iso` is the window end
     (the summary moment); defaults to now for the live run, or the historical
-    5pm-local moment for backfill."""
+    5pm-local moment for backfill. `language` (en|zh) controls the output
+    language; if None it is read from the user's profile."""
     existing = db.get_summary(user_id, lens_id, date)
     if existing and existing.get("editedByUser"):
         return False
@@ -127,6 +143,10 @@ def generate(
     lens = db.get_lens(user_id, lens_id)
     if lens is None:
         return False
+
+    if language is None:
+        profile = db.get_user(user_id)
+        language = (profile or {}).get("language", "en")
 
     as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(timezone.utc)
     window_start = (as_of - timedelta(hours=24)).isoformat()
@@ -144,7 +164,7 @@ def generate(
             asset_moves.append(move)
 
     news_only = len(asset_moves) == 0
-    system = NEWS_ONLY_SYSTEM if news_only else ASSET_SYSTEM
+    system = (NEWS_ONLY_SYSTEM if news_only else ASSET_SYSTEM) + _lang_directive(language)
     user_turn = build_user_turn(lens, articles, asset_moves, prior, date, news_only)
 
     resp = client().messages.create(
@@ -177,6 +197,7 @@ def handler(event, context):
         event["date"],
         event.get("timezone", "UTC"),
         event.get("asOf"),
+        event.get("language"),
     )
     print(json.dumps({"level": "INFO", "userId": event["userId"], "lensId": event["lensId"],
                       "date": event["date"], "written": ok}))

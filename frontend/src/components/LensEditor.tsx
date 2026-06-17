@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { Asset, Topic } from "../api/types";
+import { useI18n } from "../i18n";
 
 interface Props {
   topics: Topic[];
@@ -26,6 +27,7 @@ interface Props {
  * asset list — matching the design's "suggest, never silently mutate" rule.
  */
 export function LensEditor(props: Props) {
+  const { t: tr } = useI18n();
   const [name, setName] = useState(props.initialName ?? "");
   const [topicIds, setTopicIds] = useState<string[]>(props.initialTopicIds ?? []);
   const [assetIds, setAssetIds] = useState<string[]>(props.initialAssetIds ?? []);
@@ -92,21 +94,21 @@ export function LensEditor(props: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <label className="mb-1 block text-sm font-medium">Lens name</label>
+        <label className="mb-1 block text-sm font-medium">{tr("lens.name")}</label>
         <input
           className="input"
           value={name}
           maxLength={60}
-          placeholder="e.g. Fed policy & gold"
+          placeholder={tr("lens.namePlaceholder")}
           onChange={(e) => setName(e.target.value)}
         />
       </div>
 
       <div>
         <div className="mb-1 flex items-baseline justify-between">
-          <label className="text-sm font-medium">Topics</label>
+          <label className="text-sm font-medium">{tr("lens.topics")}</label>
           <span className="text-xs text-ink-400">
-            {topicIds.length}/{props.maxTopics} — these decide which news appears
+            {topicIds.length}/{props.maxTopics} — {tr("lens.topicsHint")}
           </span>
         </div>
         <div className="card max-h-72 space-y-4 overflow-y-auto p-4">
@@ -140,18 +142,15 @@ export function LensEditor(props: Props) {
 
       <div>
         <div className="mb-1 flex items-baseline justify-between">
-          <label className="text-sm font-medium">Tracked assets</label>
+          <label className="text-sm font-medium">{tr("lens.trackedAssets")}</label>
           <span className="text-xs text-ink-400">
-            {assetIds.length}/{props.maxAssets} — these decide which price moves the
-            summary reports
+            {assetIds.length}/{props.maxAssets} — {tr("lens.trackedAssetsHint")}
           </span>
         </div>
 
         <div className="mb-2 flex flex-wrap gap-2">
           {assetIds.length === 0 && (
-            <span className="text-xs text-ink-400">
-              None — this lens will get a news-only summary.
-            </span>
+            <span className="text-xs text-ink-400">{tr("lens.noAssets")}</span>
           )}
           {assetIds.map((id) => {
             const a = assetById.get(id);
@@ -176,7 +175,7 @@ export function LensEditor(props: Props) {
 
         {suggestions.length > 0 && (
           <div className="mb-2 text-xs">
-            <span className="text-ink-400">Suggested from your topics: </span>
+            <span className="text-ink-400">{tr("lens.suggestedFromTopics")} </span>
             {suggestions.map((id) => (
               <button
                 key={id}
@@ -192,7 +191,7 @@ export function LensEditor(props: Props) {
         <div className="relative">
           <input
             className="input"
-            placeholder="Search the asset catalog…"
+            placeholder={tr("lens.searchAssets")}
             value={assetQuery}
             onChange={(e) => setAssetQuery(e.target.value)}
           />
@@ -209,7 +208,7 @@ export function LensEditor(props: Props) {
                     <span className="text-ink-400">{a.name}</span>
                   </span>
                   {!a.hasPriceFeed && (
-                    <span className="text-xs text-ink-400">no price feed</span>
+                    <span className="text-xs text-ink-400">{tr("lens.noPriceFeed")}</span>
                   )}
                 </button>
               ))}
@@ -225,7 +224,7 @@ export function LensEditor(props: Props) {
         }
         className="btn-primary w-full"
       >
-        {props.busy ? "Saving…" : props.submitLabel}
+        {props.busy ? tr("lens.saving") : props.submitLabel}
       </button>
     </div>
   );
