@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { cognitoConfig } from "../config";
-import { useAuth } from "../auth";
 import { Spinner } from "../components/ui";
 
 export default function AuthCallback() {
-  const navigate = useNavigate();
-  const { refresh } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
 
@@ -22,10 +18,12 @@ export default function AuthCallback() {
     }
     api
       .post("/auth/callback", { code, redirectUri: cognitoConfig.redirectUri })
-      .then(() => refresh())
-      .then(() => navigate("/", { replace: true }))
+      // Hard reload so the app remounts with the session cookie present and a
+      // single, authoritative profile fetch — avoids racing the provider's
+      // initial (cookie-less) refresh, which could clobber the signed-in state.
+      .then(() => window.location.replace("/"))
       .catch(() => setError("Sign-in failed. Please try again."));
-  }, [navigate, refresh]);
+  }, []);
 
   if (error) {
     return (
