@@ -60,7 +60,8 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         : `${sentAttachments.length} ✕ ${t("chat.attached")}`);
 
     setInput("");
-    setAttachments([]);
+    // Attachments persist as a context shelf across messages — the user removes
+    // them explicitly via the ✕ on each tile.
     setTurns((prev) => [...prev, { role: "user", content: display }]);
     setSending(true);
     try {
