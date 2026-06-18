@@ -3,6 +3,7 @@ import { api, ApiError } from "../api/client";
 import { useAsync } from "../api/hooks";
 import { Lens, Summary } from "../api/types";
 import { useI18n } from "../i18n";
+import { Markdown } from "../components/Markdown";
 import { EmptyState, Modal, Spinner, Toast } from "../components/ui";
 
 interface LensSummary {
@@ -221,8 +222,8 @@ function SummaryCard({
           onChange={(e) => setBody(e.target.value)}
         />
       ) : (
-        <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-ink-800">
-          {summary.body}
+        <div className="max-h-96 overflow-y-auto text-ink-800">
+          <Markdown>{summary.body}</Markdown>
         </div>
       )}
 

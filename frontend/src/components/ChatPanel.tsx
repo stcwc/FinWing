@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { ARTICLE_DND_TYPE, ArticleAttachment, ChatTurn } from "../api/types";
 import { useI18n } from "../i18n";
+import { Markdown } from "./Markdown";
 
 export function ChatPanel({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -100,18 +101,23 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         {turns.length === 0 && attachments.length === 0 && (
           <p className="text-sm text-ink-400">{t("chat.empty")}</p>
         )}
-        {turns.map((turn, i) => (
-          <div
-            key={i}
-            className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-              turn.role === "user"
-                ? "ml-auto bg-wing-600 text-white"
-                : "bg-ink-100 text-ink-800"
-            }`}
-          >
-            {turn.content}
-          </div>
-        ))}
+        {turns.map((turn, i) =>
+          turn.role === "user" ? (
+            <div
+              key={i}
+              className="ml-auto max-w-[85%] whitespace-pre-wrap rounded-2xl bg-wing-600 px-3 py-2 text-sm text-white"
+            >
+              {turn.content}
+            </div>
+          ) : (
+            <div
+              key={i}
+              className="max-w-[85%] rounded-2xl bg-ink-100 px-3 py-2 text-ink-800"
+            >
+              <Markdown>{turn.content}</Markdown>
+            </div>
+          )
+        )}
         {sending && (
           <div className="max-w-[85%] rounded-2xl bg-ink-100 px-3 py-2 text-sm text-ink-400">
             {t("chat.thinking")}
