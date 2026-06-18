@@ -1,16 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../api/client";
+import { api, loadStatic } from "../api/client";
 import { useAsync, useInterval } from "../api/hooks";
-import { ARTICLE_DND_TYPE, ArticleAttachment, FeedItem, FeedPage, Lens } from "../api/types";
+import { useAuth } from "../auth";
+import {
+  ARTICLE_DND_TYPE,
+  ArticleAttachment,
+  Asset,
+  FeedItem,
+  FeedPage,
+  Lens,
+  Topic,
+} from "../api/types";
 import { useI18n } from "../i18n";
-import { EmptyState, Spinner, timeAgo } from "../components/ui";
+import { LensComposer } from "../components/LensComposer";
+import { EmptyState, Modal, Spinner, Toast, timeAgo } from "../components/ui";
 
 const POLL_MS = 45_000;
+const MAX_LENSES = 5;
 
 export default function Lenses() {
   const { t } = useI18n();
+  const { refresh } = useAuth();
   const lenses = useAsync(() => api.get<Lens[]>("/lenses"), []);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const active = useMemo(
     () => lenses.data?.find((l) => l.lensId === activeId) ?? lenses.data?.[0] ?? null,
@@ -21,28 +34,99 @@ export default function Lenses() {
   if (!lenses.data?.length)
     return <EmptyState title={t("feed.noLenses")} hint={t("feed.createInSettings")} />;
 
+  const atCap = lenses.data.length >= MAX_LENSES;
+
   return (
     <div>
-      <div className="mb-5 flex gap-1 overflow-x-auto border-b border-ink-200">
-        {lenses.data.map((l) => {
-          const isActive = (active?.lensId ?? "") === l.lensId;
-          return (
-            <button
-              key={l.lensId}
-              onClick={() => setActiveId(l.lensId)}
-              className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? "border-wing-500 text-ink-900"
-                  : "border-transparent text-ink-400 hover:text-ink-600"
-              }`}
-            >
-              {l.name}
-            </button>
-          );
-        })}
+      <div className="mb-5 flex items-center gap-2 border-b border-ink-200">
+        <div className="flex flex-1 gap-1 overflow-x-auto">
+          {lenses.data.map((l) => {
+            const isActive = (active?.lensId ?? "") === l.lensId;
+            return (
+              <button
+                key={l.lensId}
+                onClick={() => setActiveId(l.lensId)}
+                className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "border-wing-500 text-ink-900"
+                    : "border-transparent text-ink-400 hover:text-ink-600"
+                }`}
+              >
+                {l.name}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => setCreating(true)}
+          disabled={atCap}
+          title={atCap ? t("settings.maxLenses") : t("settings.newLens")}
+          className="shrink-0 rounded-lg px-2.5 py-1 text-lg leading-none text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-800 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label={t("settings.newLens")}
+        >
+          +
+        </button>
       </div>
       {active && <Feed lens={active} />}
+
+      {creating && (
+        <CreateLensModal
+          onClose={() => setCreating(false)}
+          onCreated={(lensId) => {
+            setCreating(false);
+            lenses.reload();
+            refresh();
+            setActiveId(lensId);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function CreateLensModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (lensId: string) => void;
+}) {
+  const { t } = useI18n();
+  const topics = useAsync(() => loadStatic<Topic[]>("taxonomy.json"), []);
+  const assets = useAsync(() => loadStatic<Asset[]>("assets.json"), []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function create(data: { name: string; topicIds: string[]; trackedAssetIds: string[] }) {
+    setBusy(true);
+    try {
+      const lens = await api.post<Lens>("/lenses", data);
+      onCreated(lens.lensId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create lens");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title={t("settings.newLensTitle")} onClose={onClose}>
+      {topics.loading || assets.loading || !topics.data || !assets.data ? (
+        <Spinner />
+      ) : (
+        <LensComposer
+          showSuggest
+          topics={topics.data}
+          assets={assets.data}
+          maxTopics={10}
+          maxAssets={10}
+          submitLabel={t("lens.create")}
+          onSubmit={create}
+          busy={busy}
+        />
+      )}
+      {error && <Toast message={error} onClose={() => setError(null)} />}
+    </Modal>
   );
 }
 
