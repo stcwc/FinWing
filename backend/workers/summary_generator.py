@@ -169,7 +169,9 @@ def generate(
 
     resp = client().messages.create(
         model=settings.SONNET_MODEL,
-        max_tokens=600,
+        # Generous ceiling so summaries are never truncated — Chinese uses ~1
+        # token/char, so the old 600 cap cut zh summaries off mid-sentence.
+        max_tokens=2000,
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_turn}],
     )
