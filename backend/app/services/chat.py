@@ -5,17 +5,8 @@ by a rolling window + running summary."""
 import anthropic
 
 from app import settings
+from app.prompts import CHAT_SYSTEM, chat_language_line
 from app.services import db
-
-CHAT_SYSTEM = """You are FinWing's financial assistant. The user's investment context is below.
-You may discuss news, market dynamics, and financial topics freely.
-Never give buy/sell recommendations or financial advice.
-Keep answers concise and grounded in the provided context where relevant.
-
-You can search the web and fetch specific URLs when the user asks about current
-events, recent prices/news, or anything beyond the provided context. Search when
-fresh information would change the answer; cite the sources you used. Don't search
-for things you already know or that are answered by the user's context."""
 
 # Anthropic server-side tools — executed on Anthropic's infrastructure; we only
 # declare them. max_uses bounds cost per turn.
@@ -68,14 +59,9 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     db.append_chat_turn(user_id, "user", message)
 
     language = (db.get_user(user_id) or {}).get("language", "en")
-    lang_line = (
-        "Respond in Simplified Chinese (简体中文)."
-        if language == "zh"
-        else "Respond in English."
-    )
     system_blocks = [
         {"type": "text", "text": CHAT_SYSTEM, "cache_control": {"type": "ephemeral"}},
-        {"type": "text", "text": lang_line},
+        {"type": "text", "text": chat_language_line(language)},
         {"type": "text", "text": _financial_context(user_id)},
     ]
     if state.get("runningSummary"):

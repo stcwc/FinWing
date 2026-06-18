@@ -9,17 +9,8 @@ import anthropic
 from botocore.exceptions import ClientError
 
 from app import settings
+from app.prompts import ABSTRACTION_SYSTEM
 from app.services.db import content_table, utcnow
-
-ABSTRACTION_SYSTEM = """You are a concise financial news analyst.
-Given a headline and excerpt, produce a JSON object with exactly these keys:
-- "abstraction_en": a 2-3 sentence English summary (what happened, which assets or
-  markets are affected, why it matters)
-- "abstraction_zh": the same summary in Simplified Chinese
-- "title_zh": the headline translated to Simplified Chinese
-
-Do not invent facts not present in the input. Use clear, neutral language.
-Output ONLY the JSON object, no surrounding text."""
 
 
 def _parse_json(raw: str) -> dict:

@@ -10,21 +10,8 @@ import re
 import anthropic
 
 from app import settings
+from app.prompts import SUGGEST_SYSTEM
 from app.services import taxonomy
-
-SUGGEST_SYSTEM = """You help a user pick which financial topics and assets to follow.
-
-You are given a catalog of topics and a catalog of tradable assets, each with a
-stable ID. Given the user's free-form interests, choose the most relevant items:
-- Include topics that directly match the interests AND closely related drivers
-  (e.g. for "US national debt" also consider Treasury yields, the Fed, the US
-  dollar). Be relevant, not exhaustive — usually 3-10 topics.
-- If the user names something tradable (an index, currency, commodity, coin,
-  stock), include the matching asset ID.
-- Use ONLY IDs that appear in the catalogs.
-
-Respond with ONLY a JSON object, no prose:
-{"topicIds": ["...", "..."], "assetIds": ["..."]}"""
 
 
 def _build_catalogs() -> tuple[str, str]:

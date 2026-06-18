@@ -9,50 +9,13 @@ from decimal import Decimal
 import anthropic
 
 from app import settings
+from app.prompts import (
+    SUMMARY_ASSET_SYSTEM,
+    SUMMARY_NEWS_ONLY_SYSTEM,
+    summary_language_directive,
+)
 from app.services import db, taxonomy
 from workers import prices
-
-CROSS_ASSET_MAP = (taxonomy.CONFIG_DIR / "cross_asset_map.json").read_text()
-
-ASSET_SYSTEM = f"""You are FinWing's financial analyst. Produce a daily summary for a user's investment lens.
-
-Rules:
-- Use hedged language: "may", "could", "appears to", "was consistent with" — never assert causation.
-- Frame explanations as candidate drivers, not conclusions.
-- Never give financial advice or recommendations.
-- Output exactly three sections with these markdown headers:
-  ## Market Moves
-  ## Key News
-  ## Possible Connections
-
-Length: about 300 words total.
-
-Cross-asset relationship reference (context, not gospel):
-<cross_asset_map>
-{CROSS_ASSET_MAP}
-</cross_asset_map>"""
-
-NEWS_ONLY_SYSTEM = """You are FinWing's financial analyst. This lens has no tracked assets with price data today (either the lens tracks no assets, or all relevant markets were closed).
-Produce a news-only synthesis — do NOT mention price movements or make price claims.
-
-Rules:
-- Never give financial advice.
-- Use hedged, analytical language.
-- Output exactly two sections with these markdown headers:
-  ## Today's Developments
-  ## What to Watch
-
-Length: about 250 words."""
-
-
-def _lang_directive(language: str) -> str:
-    if language == "zh":
-        return (
-            "\n\nWrite the ENTIRE summary in Simplified Chinese (简体中文), including the "
-            "section headers (translate the markdown headers to Chinese). Keep asset "
-            "symbols and numbers as-is."
-        )
-    return "\n\nWrite the summary in English."
 
 _client = None
 
@@ -164,7 +127,9 @@ def generate(
             asset_moves.append(move)
 
     news_only = len(asset_moves) == 0
-    system = (NEWS_ONLY_SYSTEM if news_only else ASSET_SYSTEM) + _lang_directive(language)
+    system = (
+        SUMMARY_NEWS_ONLY_SYSTEM if news_only else SUMMARY_ASSET_SYSTEM
+    ) + summary_language_directive(language)
     user_turn = build_user_turn(lens, articles, asset_moves, prior, date, news_only)
 
     resp = client().messages.create(

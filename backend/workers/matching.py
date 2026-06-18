@@ -14,6 +14,7 @@ import numpy as np
 from boto3.dynamodb.conditions import Key
 
 from app import settings
+from app.prompts import matching_tiebreak_prompt
 from app.services.db import content_table, utcnow
 
 SIM_THRESHOLD = 0.68
@@ -130,13 +131,7 @@ def haiku_confirms(title: str, topic_name: str) -> bool:
         model=settings.HAIKU_MODEL,
         max_tokens=5,
         messages=[
-            {
-                "role": "user",
-                "content": (
-                    f'Is this financial news headline about "{topic_name}"? '
-                    f"Reply YES or NO only.\n\nHeadline: {title}"
-                ),
-            }
+            {"role": "user", "content": matching_tiebreak_prompt(topic_name, title)}
         ],
     )
     return resp.content[0].text.strip().upper().startswith("YES")
