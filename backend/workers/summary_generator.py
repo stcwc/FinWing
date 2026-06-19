@@ -14,7 +14,7 @@ from app.prompts import (
     SUMMARY_NEWS_ONLY_SYSTEM,
     summary_language_directive,
 )
-from app.services import db, taxonomy
+from app.services import db, email, taxonomy
 from workers import prices
 
 _client = None
@@ -94,11 +94,14 @@ def generate(
     tz_name: str,
     as_of_iso: str | None = None,
     language: str | None = None,
+    notify_email: bool = False,
 ) -> bool:
     """Generate a per-lens summary for `date`. `as_of_iso` is the window end
     (the summary moment); defaults to now for the live run, or the historical
     5pm-local moment for backfill. `language` (en|zh) controls the output
-    language; if None it is read from the user's profile."""
+    language; if None it is read from the user's profile. When `notify_email`
+    is set and the summary is freshly written, email it to the user (subject to
+    their opt-out) — used by the daily run, not backfill."""
     existing = db.get_summary(user_id, lens_id, date)
     if existing and existing.get("editedByUser"):
         return False
@@ -107,8 +110,8 @@ def generate(
     if lens is None:
         return False
 
+    profile = db.get_user(user_id) if (language is None or notify_email) else None
     if language is None:
-        profile = db.get_user(user_id)
         language = (profile or {}).get("language", "en")
 
     as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(timezone.utc)
@@ -152,9 +155,20 @@ def generate(
         }
         for m in asset_moves
     ]
-    return db.put_generated_summary(
+    written = db.put_generated_summary(
         user_id, lens_id, date, body, moves_attr, extract_rationale(body)
     )
+
+    # Email the freshly-written summary on the daily run (never on backfill, and
+    # never on a conditional-write no-op so duplicate scheduler fires don't
+    # double-send). Best-effort: delivery failure never fails generation.
+    if written and notify_email and profile and profile.get("emailSummaries", True):
+        if profile.get("email"):
+            email.send_summary_email(
+                profile["email"], lens["name"], date, body, asset_moves, language
+            )
+
+    return written
 
 
 def handler(event, context):
@@ -165,6 +179,7 @@ def handler(event, context):
         event.get("timezone", "UTC"),
         event.get("asOf"),
         event.get("language"),
+        notify_email=True,
     )
     print(json.dumps({"level": "INFO", "userId": event["userId"], "lensId": event["lensId"],
                       "date": event["date"], "written": ok}))

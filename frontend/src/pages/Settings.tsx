@@ -55,6 +55,10 @@ export default function Settings() {
           <LanguageToggle />
         </div>
         <SummaryTimeCard profile={profile.data!} onSaved={() => setToast(t("settings.saved"))} />
+        <EmailSummaryCard
+          profile={profile.data!}
+          onSaved={() => setToast(t("settings.saved"))}
+        />
       </section>
 
       <section>
@@ -124,6 +128,59 @@ export default function Settings() {
         </Modal>
       )}
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+    </div>
+  );
+}
+
+function EmailSummaryCard({
+  profile,
+  onSaved,
+}: {
+  profile: UserProfile;
+  onSaved: () => void;
+}) {
+  const { t } = useI18n();
+  const [on, setOn] = useState(profile.emailSummaries);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle() {
+    const next = !on;
+    setOn(next); // optimistic
+    setBusy(true);
+    try {
+      await api.patch("/users/me", { emailSummaries: next });
+      onSaved();
+    } catch {
+      setOn(!next); // revert on failure
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card mt-4 flex items-center justify-between gap-4 p-4">
+      <div className="min-w-0">
+        <div className="text-sm font-medium">{t("settings.emailSummaries")}</div>
+        <div className="mt-0.5 text-xs text-ink-400">
+          {t("settings.emailSummariesHint", { email: profile.email })}
+        </div>
+      </div>
+      <button
+        role="switch"
+        aria-checked={on}
+        aria-label={t("settings.emailSummaries")}
+        disabled={busy}
+        onClick={toggle}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+          on ? "bg-wing-500" : "bg-ink-200"
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+            on ? "translate-x-5" : "translate-x-0.5"
+          }`}
+        />
+      </button>
     </div>
   );
 }

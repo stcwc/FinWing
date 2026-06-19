@@ -101,6 +101,7 @@ def create_user(user_id: str, email: str, auth_provider: str, tz: str = "America
                             "timezone": {"S": tz},
                             "summaryTimePref": {"S": "17:00"},
                             "language": {"S": "en"},
+                            "emailSummaries": {"BOOL": True},
                             "nextSummaryAt": {"S": next_at},
                             "lensCount": {"N": "0"},
                             "signupAt": {"S": now},
@@ -154,6 +155,9 @@ def update_user(user_id: str, fields: dict) -> None:
     if "language" in fields:
         expr += ", #lang = :lang"
         values[":lang"] = fields["language"]
+    if "emailSummaries" in fields:
+        expr += ", emailSummaries = :emailSummaries"
+        values[":emailSummaries"] = bool(fields["emailSummaries"])
     names = {"#tz": "timezone"}
     if "language" in fields:
         names["#lang"] = "language"

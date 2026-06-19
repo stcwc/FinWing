@@ -96,6 +96,10 @@ export class PipelineStack extends cdk.Stack {
     );
 
     // ── Summary generator (async-invoked per lens) ──────────────
+    // Emails the daily summary via SES; EMAIL_SENDER must be a verified SES
+    // identity (the finwingnews.com domain / noreply@ address).
+    const emailSender = process.env.FINWING_EMAIL_SENDER ?? "noreply@finwingnews.com";
+    const appUrl = process.env.FINWING_APP_URL ?? "https://d3anxrgbzxir7p.cloudfront.net";
     const summaryGen = new lambda.Function(this, "SummaryGenerator", {
       functionName: `finwing-summary-generator-${envName}`,
       runtime: lambda.Runtime.PYTHON_3_12,
@@ -104,11 +108,26 @@ export class PipelineStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(300),
       logRetention: logs.RetentionDays.TWO_WEEKS,
-      environment: baseEnv,
+      environment: {
+        ...baseEnv,
+        EMAIL_SENDER: emailSender,
+        EMAIL_SENDER_NAME: "FinWing",
+        APP_URL: appUrl,
+      },
     });
     appTable.grantReadWriteData(summaryGen);
     contentTable.grantReadWriteData(summaryGen);
     summaryGen.addToRolePolicy(ssmStmt);
+    // Send-only; scoped to the verified sender identity.
+    summaryGen.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendEmail"],
+        resources: [
+          `arn:aws:ses:${this.region}:${this.account}:identity/finwingnews.com`,
+          `arn:aws:ses:${this.region}:${this.account}:identity/${emailSender}`,
+        ],
+      })
+    );
 
     // ── Backfill (async-invoked from POST /lenses) ──────────────
     const backfill = new lambda.Function(this, "Backfill", {

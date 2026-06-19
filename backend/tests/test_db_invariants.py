@@ -12,6 +12,15 @@ def test_create_user_idempotent(tables):
     assert metrics["userCount"] == 1  # counter not double-incremented
 
 
+def test_email_summaries_default_on_and_toggle(tables):
+    db.create_user("u1", "a@b.com", "google")
+    assert db.get_user("u1")["emailSummaries"] is True  # default opt-in
+    db.update_user("u1", {"emailSummaries": False})
+    assert db.get_user("u1")["emailSummaries"] is False  # opt-out persists
+    db.update_user("u1", {"emailSummaries": True})
+    assert db.get_user("u1")["emailSummaries"] is True
+
+
 def test_user_cap(tables, monkeypatch):
     monkeypatch.setattr(db.settings, "MAX_USERS", 2)
     db.create_user("u1", "a@b.com", "google")

@@ -5,6 +5,7 @@ export interface UserProfile {
   timezone: string;
   summaryTimePref: string;
   language: "en" | "zh";
+  emailSummaries: boolean;
   lensCount: number;
   firstSignIn?: boolean;
 }

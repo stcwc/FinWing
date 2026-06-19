@@ -20,6 +20,12 @@ BACKFILL_FN_NAME = os.environ.get("BACKFILL_FN_NAME", "")
 
 ENV = os.environ.get("FINWING_ENV", "beta")
 COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", "")
+
+# Summary-email delivery (SES). EMAIL_SENDER must be a verified SES identity;
+# when unset, the summary generator skips email and just stores the summary.
+EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
+EMAIL_SENDER_NAME = os.environ.get("EMAIL_SENDER_NAME", "FinWing")
+APP_URL = os.environ.get("APP_URL", "")
 ALLOWED_ORIGINS = [
     o for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o
 ]

@@ -18,6 +18,7 @@ class UserProfile(BaseModel):
     timezone: str = "America/Los_Angeles"
     summaryTimePref: str = "17:00"
     language: str = "en"
+    emailSummaries: bool = True
     lensCount: int = 0
     firstSignIn: bool = False
 
@@ -26,6 +27,7 @@ class UserUpdate(BaseModel):
     timezone: Optional[str] = None
     summaryTimePref: Optional[str] = None
     language: Optional[str] = None
+    emailSummaries: Optional[bool] = None
 
     @field_validator("language")
     @classmethod
