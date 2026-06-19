@@ -99,7 +99,7 @@ export class PipelineStack extends cdk.Stack {
     // Emails the daily summary via SES; EMAIL_SENDER must be a verified SES
     // identity (the finwingnews.com domain / noreply@ address).
     const emailSender = process.env.FINWING_EMAIL_SENDER ?? "noreply@finwingnews.com";
-    const appUrl = process.env.FINWING_APP_URL ?? "https://d3anxrgbzxir7p.cloudfront.net";
+    const appUrl = process.env.FINWING_APP_URL ?? "https://finwingnews.com";
     const summaryGen = new lambda.Function(this, "SummaryGenerator", {
       functionName: `finwing-summary-generator-${envName}`,
       runtime: lambda.Runtime.PYTHON_3_12,

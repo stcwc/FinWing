@@ -23,10 +23,14 @@ export class ApiStack extends cdk.Stack {
     super(scope, id, props);
     const { envName, appTable, contentTable, userPool, userPoolClient } = props;
 
-    const allowedOrigins =
-      envName === "prod"
-        ? ["https://finwingnews.com"]
-        : ["http://localhost:5173"];
+    // Same-origin in practice (SPA calls /api on its own host), but list the
+    // custom domain + CloudFront URL so credentialed CORS works from any of them.
+    const allowedOrigins = [
+      "https://finwingnews.com",
+      "https://www.finwingnews.com",
+      "https://d3anxrgbzxir7p.cloudfront.net",
+      "http://localhost:5173",
+    ];
 
     // Hosted-UI domain host (no scheme) for the OAuth token/refresh endpoints.
     // Must match the domain prefix the Foundation stack creates.

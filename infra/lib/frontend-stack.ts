@@ -5,12 +5,18 @@ import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as apigw from "aws-cdk-lib/aws-apigatewayv2";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as route53 from "aws-cdk-lib/aws-route53";
+import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 import * as path from "path";
 import * as fs from "fs";
 
 interface Props extends cdk.StackProps {
   envName: string;
   domainName?: string;
+  hostedZoneId?: string;
+  /** us-east-1 ACM cert ARN for CloudFront (apex + www). */
+  certArn?: string;
   httpApi: apigw.HttpApi;
 }
 
@@ -65,8 +71,19 @@ export class FrontendStack extends cdk.Stack {
       ),
     });
 
+    // Custom domain (apex + www) on the distribution when a cert is supplied.
+    const useDomain = Boolean(props.domainName && props.certArn);
+    const domainNames = useDomain
+      ? [props.domainName!, `www.${props.domainName!}`]
+      : undefined;
+    const certificate = props.certArn
+      ? acm.Certificate.fromCertificateArn(this, "Cert", props.certArn)
+      : undefined;
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
+      domainNames,
+      certificate,
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -101,6 +118,24 @@ export class FrontendStack extends cdk.Stack {
         distribution,
         distributionPaths: ["/*"],
       });
+    }
+
+    // Point finwingnews.com (+ www) at the distribution via Route 53 aliases.
+    if (useDomain && props.hostedZoneId) {
+      const zone = route53.PublicHostedZone.fromHostedZoneAttributes(this, "Zone", {
+        hostedZoneId: props.hostedZoneId,
+        zoneName: props.domainName!,
+      });
+      const target = route53.RecordTarget.fromAlias(
+        new r53targets.CloudFrontTarget(distribution)
+      );
+      for (const [id, recordName] of [
+        ["AliasApex", props.domainName!],
+        ["AliasWww", `www.${props.domainName!}`],
+      ]) {
+        new route53.ARecord(this, id, { zone, recordName, target });
+        new route53.AaaaRecord(this, `${id}6`, { zone, recordName, target });
+      }
     }
 
     new cdk.CfnOutput(this, "DistributionDomain", {

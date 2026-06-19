@@ -109,16 +109,23 @@ export class FoundationStack extends cdk.Stack {
       });
     }
 
-    // The deployed app URL (CloudFront for beta, custom domain for prod).
-    // Overridable via `-c appUrl=...`; defaults keep the live beta URL so a
-    // redeploy does not revert the Cognito callback/logout URLs.
-    const appUrl =
-      this.node.tryGetContext("appUrl") ??
-      (envName === "prod"
-        ? "https://finwingnews.com"
-        : "https://d3anxrgbzxir7p.cloudfront.net");
-    const callbackUrls = [`${appUrl}/auth/callback`, "http://localhost:5173/auth/callback"];
-    const logoutUrls = [`${appUrl}/signin`, "http://localhost:5173/signin"];
+    // App origins Cognito will accept for OAuth redirect/logout. The custom
+    // domain (apex + www) is served by the same CloudFront distribution as the
+    // original *.cloudfront.net URL, so we keep all of them valid — sign-in
+    // works whether the user lands on finwingnews.com or the CloudFront URL.
+    const appOrigins = [
+      "https://finwingnews.com",
+      "https://www.finwingnews.com",
+      "https://d3anxrgbzxir7p.cloudfront.net",
+    ];
+    const callbackUrls = [
+      ...appOrigins.map((o) => `${o}/auth/callback`),
+      "http://localhost:5173/auth/callback",
+    ];
+    const logoutUrls = [
+      ...appOrigins.map((o) => `${o}/signin`),
+      "http://localhost:5173/signin",
+    ];
 
     this.userPoolClient = this.userPool.addClient("WebClient", {
       generateSecret: false,
