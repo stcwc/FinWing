@@ -94,31 +94,32 @@ def generate(
     tz_name: str,
     as_of_iso: str | None = None,
     language: str | None = None,
-    notify_email: bool = False,
-) -> bool:
+) -> dict | None:
     """Generate a per-lens summary for `date`. `as_of_iso` is the window end
     (the summary moment); defaults to now for the live run, or the historical
     5pm-local moment for backfill. `language` (en|zh) controls the output
-    language; if None it is read from the user's profile. When `notify_email`
-    is set and the summary is freshly written, email it to the user (subject to
-    their opt-out) — used by the daily run, not backfill."""
+    language; if None it is read from the user's profile.
+
+    Returns a section dict ({"lensName", "body", "assetMoves"}) when a summary is
+    freshly written, or None when there is nothing to say / the write was a
+    conditional no-op / the user has edited the day's summary. The daily handler
+    collects these sections into one digest email; backfill ignores the value."""
     existing = db.get_summary(user_id, lens_id, date)
     if existing and existing.get("editedByUser"):
-        return False
+        return None
 
     lens = db.get_lens(user_id, lens_id)
     if lens is None:
-        return False
+        return None
 
-    profile = db.get_user(user_id) if (language is None or notify_email) else None
     if language is None:
-        language = (profile or {}).get("language", "en")
+        language = (db.get_user(user_id) or {}).get("language", "en")
 
     as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(timezone.utc)
     window_start = (as_of - timedelta(hours=24)).isoformat()
     articles = fetch_articles_window(lens["topicIds"], window_start, as_of.isoformat())
     if not articles and not lens["trackedAssetIds"]:
-        return False  # nothing to say
+        return None  # nothing to say
 
     week_ago = (as_of - timedelta(days=8)).strftime("%Y-%m-%d")
     prior = [p for p in db.list_summaries(user_id, lens_id, week_ago, date) if p["date"] < date][-3:]
@@ -158,28 +159,37 @@ def generate(
     written = db.put_generated_summary(
         user_id, lens_id, date, body, moves_attr, extract_rationale(body)
     )
-
-    # Email the freshly-written summary on the daily run (never on backfill, and
-    # never on a conditional-write no-op so duplicate scheduler fires don't
-    # double-send). Best-effort: delivery failure never fails generation.
-    if written and notify_email and profile and profile.get("emailSummaries", True):
-        if profile.get("email"):
-            email.send_summary_email(
-                profile["email"], lens["name"], date, body, asset_moves, language
-            )
-
-    return written
+    if not written:
+        return None  # conditional-write no-op (e.g. duplicate scheduler fire)
+    return {"lensName": lens["name"], "body": body, "assetMoves": asset_moves}
 
 
 def handler(event, context):
-    ok = generate(
-        event["userId"],
-        event["lensId"],
-        event["date"],
-        event.get("timezone", "UTC"),
-        event.get("asOf"),
-        event.get("language"),
-        notify_email=True,
-    )
-    print(json.dumps({"level": "INFO", "userId": event["userId"], "lensId": event["lensId"],
-                      "date": event["date"], "written": ok}))
+    """Daily per-user entry point (one invocation per due user from the
+    scheduler). Generates every lens's summary, then sends ONE digest email
+    compacting all lenses — subject to the user's opt-out. Best-effort email:
+    delivery failure never fails generation."""
+    user_id = event["userId"]
+    date = event["date"]
+    tz_name = event.get("timezone", "UTC")
+
+    profile = db.get_user(user_id) or {}
+    language = event.get("language") or profile.get("language", "en")
+
+    sections = []
+    for lens in db.list_lenses(user_id):
+        lens_id = lens["SK"].split("#", 1)[1]
+        try:
+            section = generate(user_id, lens_id, date, tz_name, event.get("asOf"), language)
+        except Exception as e:  # noqa: BLE001 — one bad lens shouldn't drop the digest
+            print(json.dumps({"level": "WARN", "userId": user_id, "lensId": lens_id, "error": str(e)}))
+            continue
+        if section:
+            sections.append(section)
+
+    emailed = False
+    if sections and profile.get("emailSummaries", True) and profile.get("email"):
+        emailed = email.send_digest_email(profile["email"], user_id, date, sections, language)
+
+    print(json.dumps({"level": "INFO", "userId": user_id, "date": date,
+                      "lensesWritten": len(sections), "emailed": emailed}))

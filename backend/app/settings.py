@@ -68,3 +68,11 @@ def twelvedata_api_key() -> str:
     if key := os.environ.get("TWELVEDATA_API_KEY"):
         return key
     return ssm_param(f"/finwing/{ENV}/twelvedata-api-key")
+
+
+def unsubscribe_secret() -> str:
+    """HMAC key for one-click unsubscribe tokens. Shared by the API (verifies)
+    and the summary generator (mints)."""
+    if key := os.environ.get("UNSUBSCRIBE_SECRET"):
+        return key
+    return ssm_param(f"/finwing/{ENV}/unsubscribe-secret")

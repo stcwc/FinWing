@@ -11,6 +11,9 @@ os.environ.setdefault("AWS_REGION", "us-east-1")
 os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
 os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
 os.environ.setdefault("FINWING_ENV", "test")
+os.environ.setdefault("UNSUBSCRIBE_SECRET", "test-unsub-secret")
+os.environ.setdefault("EMAIL_SENDER", "noreply@finwingnews.com")
+os.environ.setdefault("APP_URL", "https://example.test")
 
 import boto3
 import pytest

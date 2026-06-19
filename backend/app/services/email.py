@@ -17,6 +17,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app import settings
+from app.services import unsubscribe
 
 _ses = None
 
@@ -107,67 +108,105 @@ def _moves_html(asset_moves: list[dict]) -> str:
     return f'<div style="margin:0 0 16px;">{"".join(chips)}</div>'
 
 
-def _strings(language: str) -> dict:
+def _strings(language: str, n: int) -> dict:
     if language == "zh":
         return {
-            "subject": "{lens} · {date} 每日摘要",
-            "intro": "您关注的「{lens}」今日摘要：",
+            "subject": (f"{n} 个透镜的每日摘要 · {{date}}" if n > 1 else "每日摘要 · {date}"),
+            "intro": "您关注主题的今日摘要：",
             "view": "在 FinWing 中查看",
-            "footer": "您收到此邮件是因为已开启每日摘要推送。可在 FinWing 设置中关闭。",
+            "footer": "您收到此邮件是因为已开启每日摘要推送。",
+            "unsub": "退订",
         }
     return {
-        "subject": "{lens} · Daily summary for {date}",
-        "intro": "Today's summary for your “{lens}” lens:",
+        "subject": (f"Your daily summary · {n} lenses · {{date}}" if n > 1
+                    else "Your daily summary · {date}"),
+        "intro": "Today's summary for the topics you follow:",
         "view": "View in FinWing",
-        "footer": "You're receiving this because daily-summary emails are on. "
-        "Turn them off anytime in FinWing Settings.",
+        "footer": "You're receiving this because daily-summary emails are on.",
+        "unsub": "Unsubscribe",
     }
 
 
-def _render(lens_name: str, date: str, body_md: str, asset_moves: list[dict],
-            language: str) -> tuple[str, str, str]:
-    s = _strings(language)
-    subject = s["subject"].format(lens=lens_name, date=date)
-    intro = s["intro"].format(lens=lens_name)
+def _section_html(section: dict, date: str) -> str:
+    """One lens block inside the digest."""
+    return (
+        '<div style="margin:0 0 8px;padding:18px 20px;background:#ffffff;'
+        'border:1px solid #e5e7eb;border-radius:12px;">'
+        f'<div style="font-size:16px;font-weight:600;color:#0b3d2e;margin-bottom:12px;">'
+        f'{html.escape(section["lensName"])}</div>'
+        f'{_moves_html(section.get("assetMoves", []))}'
+        f'{_markdown_to_html(section["body"])}'
+        "</div>"
+    )
+
+
+def _render_digest(date: str, sections: list[dict], language: str,
+                   unsubscribe_url: str | None) -> tuple[str, str, str]:
+    s = _strings(language, len(sections))
+    subject = s["subject"].format(date=date)
 
     cta = ""
     if settings.APP_URL:
         cta = (
             f'<a href="{html.escape(settings.APP_URL)}/summaries" '
-            f'style="display:inline-block;margin-top:8px;padding:10px 18px;'
+            f'style="display:inline-block;margin:4px 0 0;padding:10px 18px;'
             f'background:#0b8457;color:#ffffff;border-radius:8px;text-decoration:none;'
             f'font-weight:600;font-size:14px;">{s["view"]}</a>'
         )
 
+    unsub_html = ""
+    if unsubscribe_url:
+        unsub_html = (
+            f' · <a href="{html.escape(unsubscribe_url)}" '
+            f'style="color:#6b7280;text-decoration:underline;">{s["unsub"]}</a>'
+        )
+
+    blocks = "\n".join(_section_html(sec, date) for sec in sections)
     html_body = f"""<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#f4f5f7;">
   <div style="max-width:600px;margin:0 auto;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
     <div style="font-size:20px;font-weight:700;color:#0b3d2e;margin-bottom:4px;">FinWing</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">{html.escape(intro)}</div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
-      <div style="font-size:16px;font-weight:600;color:#0b3d2e;margin-bottom:12px;">{html.escape(lens_name)} · {html.escape(date)}</div>
-      {_moves_html(asset_moves)}
-      {_markdown_to_html(body_md)}
-      {cta}
-    </div>
-    <div style="font-size:11px;color:#9ca3af;margin-top:16px;line-height:1.5;">{html.escape(s["footer"])}</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">{html.escape(s["intro"])} · {html.escape(date)}</div>
+    {blocks}
+    <div style="margin-top:16px;">{cta}</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:16px;line-height:1.5;">{html.escape(s["footer"])}{unsub_html}</div>
   </div>
 </body></html>"""
 
-    text_body = f"{lens_name} · {date}\n\n{body_md}\n\n{s['footer']}"
-    return subject, html_body, text_body
+    text_parts = [f"FinWing — daily summary · {date}\n"]
+    for sec in sections:
+        text_parts.append(f"\n=== {sec['lensName']} ===\n{sec['body']}\n")
+    text_parts.append(f"\n{s['footer']}")
+    if unsubscribe_url:
+        text_parts.append(f"\n{s['unsub']}: {unsubscribe_url}")
+    return subject, html_body, "".join(text_parts)
 
 
-def send_summary_email(to_email: str, lens_name: str, date: str, body_md: str,
-                       asset_moves: list[dict], language: str = "en") -> bool:
-    """Send one summary email. Returns True on success, False on any failure
-    (logged, never raised)."""
+def send_digest_email(to_email: str, user_id: str, date: str, sections: list[dict],
+                      language: str = "en") -> bool:
+    """Send one digest email per user covering every lens with a fresh summary.
+    Returns True on success, False on any failure (logged, never raised).
+
+    Includes a one-click unsubscribe link + List-Unsubscribe headers so users can
+    opt out without signing in (also satisfies SES/RFC 8058 bulk-sender norms)."""
     if not settings.EMAIL_SENDER:
-        print(json.dumps({"level": "WARN", "msg": "EMAIL_SENDER unset; skipping summary email"}))
+        print(json.dumps({"level": "WARN", "msg": "EMAIL_SENDER unset; skipping digest email"}))
+        return False
+    if not sections:
         return False
 
-    subject, html_body, text_body = _render(lens_name, date, body_md, asset_moves, language)
+    unsubscribe_url = unsubscribe.link_for(user_id)
+    subject, html_body, text_body = _render_digest(date, sections, language, unsubscribe_url)
     source = f"{settings.EMAIL_SENDER_NAME} <{settings.EMAIL_SENDER}>"
+
+    headers = []
+    if unsubscribe_url:
+        # RFC 2369 / RFC 8058 one-click unsubscribe.
+        headers = [
+            {"Name": "List-Unsubscribe", "Value": f"<{unsubscribe_url}>"},
+            {"Name": "List-Unsubscribe-Post", "Value": "List-Unsubscribe=One-Click"},
+        ]
+
     try:
         _client().send_email(
             FromEmailAddress=source,
@@ -179,12 +218,14 @@ def send_summary_email(to_email: str, lens_name: str, date: str, body_md: str,
                         "Text": {"Data": text_body, "Charset": "UTF-8"},
                         "Html": {"Data": html_body, "Charset": "UTF-8"},
                     },
+                    **({"Headers": headers} if headers else {}),
                 }
             },
         )
-        print(json.dumps({"level": "INFO", "msg": "summary email sent", "to": to_email, "date": date}))
+        print(json.dumps({"level": "INFO", "msg": "digest email sent", "to": to_email,
+                          "date": date, "lenses": len(sections)}))
         return True
     except (ClientError, BotoCoreError) as e:
-        print(json.dumps({"level": "ERROR", "msg": "summary email failed",
+        print(json.dumps({"level": "ERROR", "msg": "digest email failed",
                           "to": to_email, "error": str(e)}))
         return False

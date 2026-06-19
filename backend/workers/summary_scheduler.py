@@ -36,23 +36,14 @@ def handler(event, context):
         tz = profile.get("timezone", "America/Los_Angeles")
         local_date = datetime.now(timezone.utc).astimezone(ZoneInfo(tz)).strftime("%Y-%m-%d")
 
-        lenses = app_table().query(
-            KeyConditionExpression=Key("PK").eq(f"USER#{user_id}") & Key("SK").begins_with("LENS#")
-        )["Items"]
-        for lens in lenses:
-            lambda_client().invoke(
-                FunctionName=settings.SUMMARY_GENERATOR_ARN,
-                InvocationType="Event",
-                Payload=json.dumps(
-                    {
-                        "userId": user_id,
-                        "lensId": lens["SK"].split("#", 1)[1],
-                        "date": local_date,
-                        "timezone": tz,
-                    }
-                ),
-            )
-            dispatched += 1
+        # One async invocation per user: the generator loops all lenses and
+        # sends a single compacted digest email.
+        lambda_client().invoke(
+            FunctionName=settings.SUMMARY_GENERATOR_ARN,
+            InvocationType="Event",
+            Payload=json.dumps({"userId": user_id, "date": local_date, "timezone": tz}),
+        )
+        dispatched += 1
 
         # Roll forward BEFORE generation completes — duplicate fires are
         # harmless because the summary write is conditional (LLD §5.4).
@@ -62,4 +53,4 @@ def handler(event, context):
             UpdateExpression="SET nextSummaryAt = :n, GSI2SK = :n",
             ExpressionAttributeValues={":n": next_at},
         )
-    print(json.dumps({"level": "INFO", "usersDue": len(resp["Items"]), "lensesDispatched": dispatched}))
+    print(json.dumps({"level": "INFO", "usersDue": len(resp["Items"]), "usersDispatched": dispatched}))

@@ -13,6 +13,7 @@ from app.routers import (
     feedback_routes,
     lens_routes,
     topic_routes,
+    unsubscribe_routes,
     user_routes,
 )
 
@@ -33,6 +34,7 @@ app.include_router(topic_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(feedback_routes.router)
 app.include_router(admin_routes.router)
+app.include_router(unsubscribe_routes.router)
 
 
 @app.get("/health")
