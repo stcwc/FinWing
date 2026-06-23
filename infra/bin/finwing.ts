@@ -5,6 +5,7 @@ import { FoundationStack } from "../lib/foundation-stack";
 import { ApiStack } from "../lib/api-stack";
 import { PipelineStack } from "../lib/pipeline-stack";
 import { FrontendStack } from "../lib/frontend-stack";
+import { MailStack } from "../lib/mail-stack";
 
 const app = new cdk.App();
 const env = app.node.tryGetContext("env") ?? "beta";
@@ -51,6 +52,16 @@ new PipelineStack(app, `FinWing-Pipeline-${env}`, {
   contentTable: foundation.contentTable,
   matchingQueue: foundation.matchingQueue,
   abstractionQueue: foundation.abstractionQueue,
+});
+
+new MailStack(app, `FinWing-Mail-${env}`, {
+  env: cdkEnv,
+  envName: env,
+  mailDomain: domainName,
+  recipients: ["support"],
+  forwardTo: "john0707ieem@gmail.com",
+  hostedZoneName: domainName,
+  hostedZoneId,
 });
 
 new FrontendStack(app, `FinWing-Frontend-${env}`, {
