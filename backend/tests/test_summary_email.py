@@ -19,8 +19,8 @@ def wired(monkeypatch):
     sent = []
 
     monkeypatch.setattr(
-        sg.db, "list_lenses",
-        lambda uid: [{"SK": "LENS#a"}, {"SK": "LENS#b"}],
+        sg.db, "list_lenses",  # real DTO shape: lensId is pre-stripped (no "SK")
+        lambda uid: [{"lensId": "a"}, {"lensId": "b"}],
     )
     monkeypatch.setattr(sg.db, "get_summary", lambda *a, **k: None)
     monkeypatch.setattr(

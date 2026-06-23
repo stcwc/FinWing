@@ -178,7 +178,7 @@ def handler(event, context):
 
     sections = []
     for lens in db.list_lenses(user_id):
-        lens_id = lens["SK"].split("#", 1)[1]
+        lens_id = lens["lensId"]
         try:
             section = generate(user_id, lens_id, date, tz_name, event.get("asOf"), language)
         except Exception as e:  # noqa: BLE001 — one bad lens shouldn't drop the digest
