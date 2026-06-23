@@ -5,6 +5,8 @@ import { Spinner } from "./components/ui";
 import { Shell } from "./components/Shell";
 import SignIn from "./pages/SignIn";
 import AuthCallback from "./pages/AuthCallback";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Onboarding from "./pages/Onboarding";
 import Lenses from "./pages/Lenses";
 import Summaries from "./pages/Summaries";
@@ -19,6 +21,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/auth/callback" element={<AuthCallback />} />
+      {/* Public legal pages — always reachable, independent of auth state. */}
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       {loading ? (
         <Route path="*" element={<Spinner label={t("common.loading")} />} />
       ) : !user ? (

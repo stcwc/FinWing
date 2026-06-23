@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { hostedUiSignInUrl } from "../config";
 import { useI18n } from "../i18n";
 import { LanguageToggle } from "../components/LanguageToggle";
@@ -35,6 +36,11 @@ export default function SignIn() {
           {t("signin.email")}
         </a>
         <p className="mt-4 text-xs text-ink-400">{t("signin.disclaimer")}</p>
+        <p className="mt-4 text-xs text-ink-400">
+          <Link to="/privacy" className="hover:text-ink-600">Privacy</Link>
+          <span className="mx-2">·</span>
+          <Link to="/terms" className="hover:text-ink-600">Terms</Link>
+        </p>
       </div>
     </div>
   );
