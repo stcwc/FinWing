@@ -19,9 +19,19 @@ const hostedZoneId = "Z03738783BIVY9U0GLXJ3";
 const certArn =
   "arn:aws:acm:us-east-1:410834168390:certificate/c924620f-1f53-4ebd-9308-e5313a23b2d3";
 
+// Branded Cognito Hosted-UI domain. Wildcard cert (*.finwingnews.com) in
+// us-east-1, separate from the CloudFront site cert above.
+const authDomain = `auth.${domainName}`;
+const authCertArn =
+  "arn:aws:acm:us-east-1:410834168390:certificate/e8a8936a-9e7f-4dab-b48c-a59f94d87c96";
+
 const foundation = new FoundationStack(app, `FinWing-Foundation-${env}`, {
   env: cdkEnv,
   envName: env,
+  authDomain,
+  authCertArn,
+  hostedZoneName: domainName,
+  hostedZoneId,
 });
 
 const apiStack = new ApiStack(app, `FinWing-Api-${env}`, {

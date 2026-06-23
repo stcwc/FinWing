@@ -4,9 +4,19 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as route53 from "aws-cdk-lib/aws-route53";
+import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 
 interface Props extends cdk.StackProps {
   envName: string;
+  /** Branded Hosted-UI domain, e.g. auth.finwingnews.com. */
+  authDomain?: string;
+  /** us-east-1 ACM cert covering authDomain (Cognito fronts it with CloudFront). */
+  authCertArn?: string;
+  /** Hosted zone for authDomain. */
+  hostedZoneName?: string;
+  hostedZoneId?: string;
 }
 
 /** Shared stateful resources: DynamoDB tables, Cognito, SQS queues, secrets. */
@@ -79,6 +89,32 @@ export class FoundationStack extends cdk.Stack {
     this.userPool.addDomain("HostedUiDomain", {
       cognitoDomain: { domainPrefix },
     });
+
+    // Branded Hosted-UI domain (auth.finwingnews.com). Kept ALONGSIDE the prefix
+    // domain so the OAuth endpoints stay reachable on both during cutover — the
+    // app/backend flip to it only after Google's redirect URI is updated. The
+    // cert must live in us-east-1 because Cognito serves custom domains via
+    // CloudFront. Requires the parent domain to already resolve (apex A record).
+    const { authDomain, authCertArn, hostedZoneName, hostedZoneId } = props;
+    if (authDomain && authCertArn && hostedZoneName && hostedZoneId) {
+      const brandedDomain = this.userPool.addDomain("BrandedAuthDomain", {
+        customDomain: {
+          domainName: authDomain,
+          certificate: acm.Certificate.fromCertificateArn(this, "AuthCert", authCertArn),
+        },
+      });
+      const zone = route53.PublicHostedZone.fromHostedZoneAttributes(this, "AuthZone", {
+        hostedZoneId,
+        zoneName: hostedZoneName,
+      });
+      new route53.ARecord(this, "AuthAlias", {
+        zone,
+        recordName: authDomain,
+        target: route53.RecordTarget.fromAlias(
+          new r53targets.UserPoolDomainTarget(brandedDomain)
+        ),
+      });
+    }
 
     // Google federation. Client ID + secret come from SSM (set out-of-band so
     // the secret never lives in source); the IdP is created only when the
