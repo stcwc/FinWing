@@ -41,6 +41,7 @@ const apiStack = new ApiStack(app, `FinWing-Api-${env}`, {
   contentTable: foundation.contentTable,
   userPool: foundation.userPool,
   userPoolClient: foundation.userPoolClient,
+  authDomain,
 });
 
 new PipelineStack(app, `FinWing-Pipeline-${env}`, {

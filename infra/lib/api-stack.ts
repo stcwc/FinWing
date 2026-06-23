@@ -14,6 +14,9 @@ interface Props extends cdk.StackProps {
   contentTable: dynamodb.Table;
   userPool: cognito.UserPool;
   userPoolClient: cognito.UserPoolClient;
+  /** Branded Hosted-UI domain (auth.finwingnews.com); falls back to the
+   *  Cognito prefix domain when unset. Used for the OAuth token endpoints. */
+  authDomain?: string;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -33,9 +36,11 @@ export class ApiStack extends cdk.Stack {
     ];
 
     // Hosted-UI domain host (no scheme) for the OAuth token/refresh endpoints.
-    // Must match the domain prefix the Foundation stack creates.
+    // Prefer the branded custom domain; fall back to the Cognito prefix domain
+    // (which the Foundation stack still serves) when no branded domain is set.
     const domainPrefix = `finwing-${envName}-${this.account.slice(0, 6)}`;
-    const cognitoDomain = `${domainPrefix}.auth.${this.region}.amazoncognito.com`;
+    const cognitoDomain =
+      props.authDomain ?? `${domainPrefix}.auth.${this.region}.amazoncognito.com`;
 
     const apiFn = new lambda.Function(this, "ApiHandler", {
       functionName: `finwing-api-${envName}`,
