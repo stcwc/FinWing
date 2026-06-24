@@ -70,6 +70,12 @@ def twelvedata_api_key() -> str:
     return ssm_param(f"/finwing/{ENV}/twelvedata-api-key")
 
 
+def fred_api_key() -> str:
+    if key := os.environ.get("FRED_API_KEY"):
+        return key
+    return ssm_param(f"/finwing/{ENV}/fred-api-key")
+
+
 def unsubscribe_secret() -> str:
     """HMAC key for one-click unsubscribe tokens. Shared by the API (verifies)
     and the summary generator (mints)."""

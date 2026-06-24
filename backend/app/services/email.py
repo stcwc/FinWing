@@ -99,11 +99,14 @@ def _moves_html(asset_moves: list[dict]) -> str:
         up = float(m["move"]) >= 0
         color = "#0b8457" if up else "#c0392b"
         arrow = "▲" if up else "▼"
+        # Yields move in percentage points (small, 2dp); everything else in % change.
+        is_yield = m.get("kind") == "yield"
+        amount = f'{abs(float(m["move"])):.2f}pp' if is_yield else f'{abs(float(m["move"])):.1f}%'
         chips.append(
             f'<span style="display:inline-block;margin:0 6px 6px 0;padding:2px 8px;'
             f'border-radius:9999px;background:{color}1a;color:{color};font-size:12px;'
             f'font-weight:600;">{html.escape(str(m["symbol"]))} {arrow} '
-            f'{abs(float(m["move"])):.1f}%</span>'
+            f'{amount}</span>'
         )
     return f'<div style="margin:0 0 16px;">{"".join(chips)}</div>'
 

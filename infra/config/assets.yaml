@@ -47,10 +47,11 @@ assets:
   - { assetId: IEF,   symbol: IEF,   name: iShares 7-10 Year Treasury ETF, assetClass: etf,  finnhubSymbol: IEF, twelveDataSymbol: IEF, hasPriceFeed: true }
   - { assetId: HYG,   symbol: HYG,   name: iShares High Yield Corp ETF,    assetClass: etf,  finnhubSymbol: HYG, twelveDataSymbol: HYG, hasPriceFeed: true }
   - { assetId: LQD,   symbol: LQD,   name: iShares IG Corporate Bond ETF,  assetClass: etf,  finnhubSymbol: LQD, twelveDataSymbol: LQD, hasPriceFeed: true }
-  # Treasury yields: no free intraday feed; SHY/IEF/TLT are the price proxies.
-  - { assetId: US2Y,  symbol: US2Y,  name: US 2-Year Treasury Yield,  assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
-  - { assetId: US10Y, symbol: US10Y, name: US 10-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
-  - { assetId: US30Y, symbol: US30Y, name: US 30-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", hasPriceFeed: false }
+  # Treasury yields come from FRED (daily constant-maturity series), not Twelve
+  # Data; moves are reported in percentage points, not as a % change.
+  - { assetId: US2Y,  symbol: US2Y,  name: US 2-Year Treasury Yield,  assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", fredSeries: DGS2,  hasPriceFeed: true }
+  - { assetId: US10Y, symbol: US10Y, name: US 10-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", fredSeries: DGS10, hasPriceFeed: true }
+  - { assetId: US30Y, symbol: US30Y, name: US 30-Year Treasury Yield, assetClass: bond, finnhubSymbol: "", twelveDataSymbol: "", fredSeries: DGS30, hasPriceFeed: true }
 
   # ── Commodities (gold spot on TD free; rest via US ETF proxies) ─
   - { assetId: XAUUSD, symbol: XAU/USD, name: Gold,        assetClass: commodity, finnhubSymbol: "OANDA:XAU_USD",   twelveDataSymbol: "XAU/USD", hasPriceFeed: true }

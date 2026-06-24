@@ -54,7 +54,11 @@ def build_user_turn(lens: dict, articles: list[dict], asset_moves: list[dict],
     if not news_only:
         parts.append(f"**24-hour asset moves ({date}):**")
         for m in asset_moves:
-            parts.append(f"{m['symbol']}: {m['move']:+.1f}% ({m['open']:.2f} → {m['close']:.2f})")
+            if m.get("kind") == "yield":
+                # Yield level in %, change in percentage points (not a % change).
+                parts.append(f"{m['symbol']}: {m['close']:.2f}% ({m['move']:+.2f}pp vs prior {m['open']:.2f}%)")
+            else:
+                parts.append(f"{m['symbol']}: {m['move']:+.1f}% ({m['open']:.2f} → {m['close']:.2f})")
         parts.append("")
 
     parts.append("**News abstractions (last 24h, newest first):**")
