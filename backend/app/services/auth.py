@@ -148,11 +148,14 @@ def session_cookie_headers(tokens: dict) -> list[tuple[str, str]]:
         )
     ]
     if "refresh_token" in tokens:
+        # Scoped to /api/auth (the browser-facing path — CloudFront strips the
+        # /api prefix before the API sees it) so the refresh token is sent only
+        # to the auth endpoints, not every API request.
         headers.append(
             (
                 "set-cookie",
                 f"finwing_refresh={tokens['refresh_token']}; HttpOnly{secure}; "
-                f"SameSite=Lax; Path=/auth{domain}; Max-Age=2592000",
+                f"SameSite=Lax; Path=/api/auth{domain}; Max-Age=2592000",
             )
         )
     return headers

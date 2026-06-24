@@ -1,4 +1,8 @@
-/** Thin fetch wrapper. All requests send cookies (httpOnly session). */
+/** Thin fetch wrapper. All requests send cookies (httpOnly session).
+ *  On a 401 the session cookie has expired, so we transparently refresh it once
+ *  (POST /auth/refresh mints a new short-lived session cookie from the
+ *  refresh-token cookie) and replay the request. This keeps users signed in for
+ *  the life of the refresh token instead of being bounced every hour. */
 
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
@@ -12,13 +16,41 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+// A single in-flight refresh shared by all concurrent 401s, so a burst of
+// requests triggers exactly one /auth/refresh.
+let refreshing: Promise<boolean> | null = null;
+
+function refreshSession(): Promise<boolean> {
+  if (!refreshing) {
+    refreshing = fetch(`${BASE}/auth/refresh`, { method: "POST", credentials: "include" })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshing = null;
+      });
+  }
+  return refreshing;
+}
+
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  retried = false
+): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method,
     credentials: "include",
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  // Expired session → refresh once and replay (but never recurse on /auth/refresh).
+  if (res.status === 401 && !retried && path !== "/auth/refresh") {
+    if (await refreshSession()) {
+      return request<T>(method, path, body, true);
+    }
+  }
 
   if (res.status === 204) return undefined as T;
 

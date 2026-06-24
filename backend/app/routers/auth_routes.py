@@ -36,7 +36,7 @@ def logout(response: Response):
         "set-cookie", "finwing_session=; HttpOnly; Path=/; Max-Age=0"
     )
     response.headers.append(
-        "set-cookie", "finwing_refresh=; HttpOnly; Path=/auth; Max-Age=0"
+        "set-cookie", "finwing_refresh=; HttpOnly; Path=/api/auth; Max-Age=0"
     )
     return {"ok": True}
 
