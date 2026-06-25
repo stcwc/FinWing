@@ -2,18 +2,36 @@
 financial context injected fresh + prompt-cached every turn, history bounded
 by a rolling window + running summary."""
 
+import json
+import time
+
 import anthropic
 
 from app import settings
 from app.prompts import CHAT_SYSTEM, chat_language_line
 from app.services import db
 
-# Anthropic server-side tools — executed on Anthropic's infrastructure; we only
-# declare them. max_uses bounds cost per turn.
+# Anthropic server-side web search, executed on Anthropic's infrastructure.
+#
+# We deliberately pin the OLDER web_search_20250305. The newer _20260209 version
+# has "dynamic filtering" built in — it spins up a code-execution sandbox and
+# runs code to filter results (surfacing code_execution_tool_result /
+# bash_code_execution_tool_result blocks even though only web_search is
+# declared). That sandbox is NOT bounded by max_uses and routinely ran 60–180s,
+# blowing past the API Gateway / Lambda 30s request ceiling and timing the chat
+# out. The 20250305 version does plain search with no code execution.
+#
+# max_uses bounds latency: each search round is ~10s, and the whole request must
+# finish under 30s, so we cap at 2. web_fetch (full-page reads) is omitted — it's
+# the slowest path and rarely needed, since attached articles already carry their
+# content.
 WEB_TOOLS = [
-    {"type": "web_search_20260209", "name": "web_search", "max_uses": 5},
-    {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 5},
+    {"type": "web_search_20250305", "name": "web_search", "max_uses": 2},
 ]
+
+# Hard wall on the server tool-loop continuation (each iteration is another
+# multi-second model call); 1 continuation is plenty within the 30s budget.
+_MAX_TURNS = 2
 
 
 def _client() -> anthropic.Anthropic:
@@ -75,10 +93,11 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     messages: list = window + [{"role": "user", "content": turn_content}]
 
     client = _client()
-    # The server runs its own loop for web search/fetch; if it hits the internal
+    # The server runs its own loop for web search; if it hits the internal
     # iteration limit it returns stop_reason="pause_turn" — re-send to continue.
+    t0 = time.time()
     resp = None
-    for _ in range(6):
+    for _ in range(_MAX_TURNS):
         resp = client.messages.create(
             model=settings.SONNET_MODEL,
             max_tokens=1500,
@@ -89,6 +108,9 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
         if resp.stop_reason != "pause_turn":
             break
         messages.append({"role": "assistant", "content": resp.content})
+    print(json.dumps({"level": "INFO", "event": "chat", "userId": user_id,
+                      "elapsedMs": int((time.time() - t0) * 1000),
+                      "stopReason": resp.stop_reason}))
 
     # Final answer is the text block(s); other blocks are server tool use/results.
     answer = "".join(b.text for b in resp.content if b.type == "text").strip()
