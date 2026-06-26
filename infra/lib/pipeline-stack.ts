@@ -155,13 +155,16 @@ export class PipelineStack extends cdk.Stack {
     appTable.grantReadWriteData(summaryGen);
     contentTable.grantReadWriteData(summaryGen);
     summaryGen.addToRolePolicy(ssmStmt);
-    // Send-only; scoped to the verified sender identity.
+    // SendEmail authorizes against every identity it references — including the
+    // recipient identities (which must be verified in the SES sandbox) — plus the
+    // configuration set, which is a separate resource. Scoping only to the sender
+    // identity 403s on the recipient identity, so allow any identity + the config set.
     summaryGen.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["ses:SendEmail"],
         resources: [
-          `arn:aws:ses:${this.region}:${this.account}:identity/finwingnews.com`,
-          `arn:aws:ses:${this.region}:${this.account}:identity/${emailSender}`,
+          `arn:aws:ses:${this.region}:${this.account}:identity/*`,
+          `arn:aws:ses:${this.region}:${this.account}:configuration-set/finwing-${envName}`,
         ],
       })
     );
