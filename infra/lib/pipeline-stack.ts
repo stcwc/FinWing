@@ -8,6 +8,9 @@ import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as ses from "aws-cdk-lib/aws-ses";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import { backendCode, matchingImage } from "./lambda-code";
 
 interface Props extends cdk.StackProps {
@@ -95,6 +98,39 @@ export class PipelineStack extends cdk.Stack {
       new SqsEventSource(abstractionQueue, { batchSize: 10, maxBatchingWindow: cdk.Duration.seconds(30) })
     );
 
+    // ── Email bounce/complaint handling ─────────────────────────
+    // Digest sends reference this config set; SES publishes Bounce/Complaint
+    // events to SNS; the handler suppresses the address and disables the user's
+    // email preference. (Account-level suppression is enabled out of band too.)
+    const emailConfigSet = new ses.ConfigurationSet(this, "EmailConfigSet", {
+      configurationSetName: `finwing-${envName}`,
+    });
+    const sesEventsTopic = new sns.Topic(this, "SesEventsTopic", {
+      topicName: `finwing-ses-events-${envName}`,
+    });
+    emailConfigSet.addEventDestination("BounceComplaint", {
+      destination: ses.EventDestination.snsTopic(sesEventsTopic),
+      events: [ses.EmailSendingEvent.BOUNCE, ses.EmailSendingEvent.COMPLAINT],
+    });
+    const sesEvents = new lambda.Function(this, "SesEvents", {
+      functionName: `finwing-ses-events-${envName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "workers.ses_events.handler",
+      code: backendCode(),
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(30),
+      logRetention: logs.RetentionDays.TWO_WEEKS,
+      environment: baseEnv,
+    });
+    appTable.grantReadWriteData(sesEvents);
+    sesEvents.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:PutSuppressedDestination"],
+        resources: ["*"],
+      })
+    );
+    sesEventsTopic.addSubscription(new subs.LambdaSubscription(sesEvents));
+
     // ── Summary generator (async-invoked per lens) ──────────────
     // Emails the daily summary via SES; EMAIL_SENDER must be a verified SES
     // identity (the finwingnews.com domain / noreply@ address).
@@ -113,6 +149,7 @@ export class PipelineStack extends cdk.Stack {
         EMAIL_SENDER: emailSender,
         EMAIL_SENDER_NAME: "FinWing",
         APP_URL: appUrl,
+        EMAIL_CONFIG_SET: emailConfigSet.configurationSetName,
       },
     });
     appTable.grantReadWriteData(summaryGen);

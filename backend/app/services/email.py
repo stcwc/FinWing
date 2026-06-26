@@ -210,21 +210,26 @@ def send_digest_email(to_email: str, user_id: str, date: str, sections: list[dic
             {"Name": "List-Unsubscribe-Post", "Value": "List-Unsubscribe=One-Click"},
         ]
 
+    params = {
+        "FromEmailAddress": source,
+        "Destination": {"ToAddresses": [to_email]},
+        "Content": {
+            "Simple": {
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {
+                    "Text": {"Data": text_body, "Charset": "UTF-8"},
+                    "Html": {"Data": html_body, "Charset": "UTF-8"},
+                },
+                **({"Headers": headers} if headers else {}),
+            }
+        },
+    }
+    # Track bounces/complaints (→ SNS → auto-suppression) when a config set is set.
+    if settings.EMAIL_CONFIG_SET:
+        params["ConfigurationSetName"] = settings.EMAIL_CONFIG_SET
+
     try:
-        _client().send_email(
-            FromEmailAddress=source,
-            Destination={"ToAddresses": [to_email]},
-            Content={
-                "Simple": {
-                    "Subject": {"Data": subject, "Charset": "UTF-8"},
-                    "Body": {
-                        "Text": {"Data": text_body, "Charset": "UTF-8"},
-                        "Html": {"Data": html_body, "Charset": "UTF-8"},
-                    },
-                    **({"Headers": headers} if headers else {}),
-                }
-            },
-        )
+        _client().send_email(**params)
         print(json.dumps({"level": "INFO", "msg": "digest email sent", "to": to_email,
                           "date": date, "lenses": len(sections)}))
         return True

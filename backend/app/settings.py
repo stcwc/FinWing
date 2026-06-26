@@ -26,6 +26,9 @@ COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", "")
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
 EMAIL_SENDER_NAME = os.environ.get("EMAIL_SENDER_NAME", "FinWing")
 APP_URL = os.environ.get("APP_URL", "")
+# SES configuration set: when set, digest sends reference it so bounce/complaint
+# events publish to SNS for auto-suppression.
+EMAIL_CONFIG_SET = os.environ.get("EMAIL_CONFIG_SET", "")
 ALLOWED_ORIGINS = [
     o for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o
 ]

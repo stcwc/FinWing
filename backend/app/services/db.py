@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from app import settings
@@ -167,6 +167,29 @@ def update_user(user_id: str, fields: dict) -> None:
         ExpressionAttributeNames=names,
         ExpressionAttributeValues=values,
     )
+
+
+def disable_email_for(email: str) -> int:
+    """Turn off emailSummaries for every profile with this address (bounce/
+    complaint handling). Scans PROFILE items by email; returns the count updated."""
+    table = app_table()
+    updated = 0
+    kwargs = {
+        "FilterExpression": Attr("SK").eq("PROFILE") & Attr("email").eq(email),
+        "ProjectionExpression": "PK",
+    }
+    while True:
+        resp = table.scan(**kwargs)
+        for item in resp.get("Items", []):
+            table.update_item(
+                Key={"PK": item["PK"], "SK": "PROFILE"},
+                UpdateExpression="SET emailSummaries = :f",
+                ExpressionAttributeValues={":f": False},
+            )
+            updated += 1
+        if "LastEvaluatedKey" not in resp:
+            return updated
+        kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
 
 def record_signin(user_id: str, auth_provider: str) -> None:
