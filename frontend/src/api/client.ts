@@ -6,6 +6,11 @@
 
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
+/** Dispatched on window when a request stays 401 after a refresh attempt — i.e.
+ *  the session has fully expired. The auth provider listens and signs the user
+ *  out so they land on /signin instead of an empty signed-in view. */
+export const SESSION_EXPIRED_EVENT = "finwing:session-expired";
+
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -58,6 +63,12 @@ async function request<T>(
   const data = text ? JSON.parse(text) : null;
 
   if (!res.ok) {
+    // A 401 that survived the refresh attempt means the session is truly gone.
+    // Signal the app to clear auth state and route to sign-in, rather than
+    // letting callers render an empty/broken signed-in view.
+    if (res.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
     const detail = data?.detail ?? data;
     throw new ApiError(
       res.status,

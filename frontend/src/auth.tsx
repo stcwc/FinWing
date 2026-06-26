@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { api, ApiError } from "./api/client";
+import { api, ApiError, SESSION_EXPIRED_EVENT } from "./api/client";
 import { UserProfile } from "./api/types";
 import { hostedUiSignOutUrl } from "./config";
 
@@ -44,6 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh();
+  }, []);
+
+  // When any request reports the session has fully expired, drop the user so the
+  // app routes to /signin instead of showing an empty signed-in view.
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
 
   return (
