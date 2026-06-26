@@ -56,8 +56,8 @@ def test_refresh_and_get_price_and_yield(tables, monkeypatch):
 
 
 def test_get_quotes_cache_miss_falls_back_to_daily(tables, monkeypatch):
-    # No QUOTE cache → daily close (price asset reports % change, abs change = close-open).
-    monkeypatch.setattr(prices, "move_for_date", lambda aid, d, tz: {
+    # No QUOTE cache → read-only daily close (price asset: % change, abs = close-open).
+    monkeypatch.setattr(quotes, "_latest_daily", lambda aid: {
         "assetId": aid, "symbol": "NVDA", "open": 199.0, "close": 194.29, "move": -2.37, "kind": "price"
     })
     got = quotes.get_quotes(["NVDA"])[0]
@@ -67,7 +67,7 @@ def test_get_quotes_cache_miss_falls_back_to_daily(tables, monkeypatch):
 
 
 def test_get_quotes_no_data_returns_nulls(tables, monkeypatch):
-    monkeypatch.setattr(prices, "move_for_date", lambda *a, **k: None)
+    monkeypatch.setattr(quotes, "_latest_daily", lambda aid: None)
     got = quotes.get_quotes(["NVDA"])[0]
     assert got["price"] is None and got["stale"] is True
 

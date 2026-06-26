@@ -44,8 +44,10 @@ CHAT_WINDOW_TURNS = 20
 BACKFILL_DAYS = 10
 
 # Lens-ticker quotes: symbols per Twelve Data /quote call. The free tier allows
-# 8 credits/min and each symbol is one credit, so chunk at 8 with a pause.
+# 8 credits/min and each symbol is one credit, so chunk at 8 and pause a full
+# rolling minute between chunks (a shorter pause 429s the next chunk).
 QUOTE_REFRESH_BATCH = 8
+QUOTE_RATE_PAUSE_SECONDS = 61
 
 
 @lru_cache(maxsize=8)

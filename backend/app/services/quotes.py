@@ -12,7 +12,7 @@ Capacity: max distinct Twelve Data symbols app-wide ~= 2 x refresh-interval-min
 faster refresh means a longer/shorter EventBridge rate or a paid plan."""
 
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -46,7 +46,9 @@ def _fetch_quotes(td_symbols: list[str]) -> dict[str, dict]:
     chunks = [td_symbols[i:i + batch] for i in range(0, len(td_symbols), batch)]
     for i, chunk in enumerate(chunks):
         if i > 0:
-            time.sleep(8)  # free tier: 8 requests/minute
+            # A full rolling minute: 8 credits/min means the prior chunk's
+            # credits must age out before the next chunk, or it 429s.
+            time.sleep(settings.QUOTE_RATE_PAUSE_SECONDS)
         try:
             resp = requests.get(
                 TD_QUOTE, params={"symbol": ",".join(chunk), "apikey": key}, timeout=15
@@ -130,12 +132,23 @@ def refresh_assets(asset_ids: list[str]) -> int:
     return written
 
 
+def _latest_daily(asset_id: str) -> dict | None:
+    """Read-only fallback: the most recent cached daily move (written by the
+    summary pipeline / quote refresher). Reads ASSET#<id>/PRICE#<date> directly —
+    never fetches upstream or writes — so the API read path has no side effects."""
+    today = datetime.now(ZoneInfo(QUOTE_TZ)).date()
+    for back in range(7):
+        rec = prices._get_cache(asset_id, (today - timedelta(days=back)).strftime("%Y-%m-%d"))
+        if rec:
+            return rec
+    return None
+
+
 def get_quotes(asset_ids: list[str]) -> list[dict]:
     """Read the cached quote for each asset. On a cache miss, fall back to the
-    latest daily close (via the daily price/yield cache) so the first load before
-    the refresher runs still shows a value, flagged stale."""
+    latest cached daily close so the first load before the refresher runs still
+    shows a value, flagged stale. Read-only — never hits the upstream provider."""
     assets = taxonomy.assets()
-    today = _today(QUOTE_TZ)
     out: list[dict] = []
     for aid in asset_ids:
         a = assets.get(aid)
@@ -158,9 +171,9 @@ def get_quotes(asset_ids: list[str]) -> list[dict]:
                 "stale": False,
             })
             continue
-        # Cache miss → latest daily close (cached; only the never-summarized edge
-        # case hits upstream). Yields report a pp change, prices a % change.
-        mv = prices.move_for_date(aid, today, QUOTE_TZ) if a.get("hasPriceFeed") else None
+        # Cache miss → latest cached daily close (read-only). Yields report a pp
+        # change, prices a % change.
+        mv = _latest_daily(aid) if a.get("hasPriceFeed") else None
         if mv:
             is_yield = mv.get("kind") == "yield"
             out.append({

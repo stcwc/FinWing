@@ -174,7 +174,9 @@ export class PipelineStack extends cdk.Stack {
       handler: "workers.quote_refresher.handler",
       code: backendCode(),
       memorySize: 256,
-      timeout: cdk.Duration.seconds(60),
+      // Paces Twelve Data /quote chunks ~1 min apart to respect 8 credits/min;
+      // refreshing ~17 symbols spans a few minutes per run.
+      timeout: cdk.Duration.seconds(300),
       logRetention: logs.RetentionDays.TWO_WEEKS,
       environment: baseEnv,
     });
