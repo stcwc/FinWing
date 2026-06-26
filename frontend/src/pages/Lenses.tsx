@@ -13,6 +13,7 @@ import {
 } from "../api/types";
 import { useI18n } from "../i18n";
 import { LensComposer } from "../components/LensComposer";
+import { LensTicker } from "../components/LensTicker";
 import { EmptyState, Modal, Spinner, Toast, timeAgo } from "../components/ui";
 
 const POLL_MS = 45_000;
@@ -67,6 +68,7 @@ export default function Lenses() {
           +
         </button>
       </div>
+      {active && <LensTicker lens={active} />}
       {active && <Feed lens={active} />}
 
       {creating && (

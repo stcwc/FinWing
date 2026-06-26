@@ -43,6 +43,10 @@ PRICE_CACHE_TTL_DAYS = 7
 CHAT_WINDOW_TURNS = 20
 BACKFILL_DAYS = 10
 
+# Lens-ticker quotes: symbols per Twelve Data /quote call. The free tier allows
+# 8 credits/min and each symbol is one credit, so chunk at 8 with a pause.
+QUOTE_REFRESH_BATCH = 8
+
 
 @lru_cache(maxsize=8)
 def ssm_param(name: str) -> str:

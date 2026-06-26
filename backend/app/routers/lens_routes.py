@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app import settings
 from app.models.schemas import FeedPage, Lens, LensCreate, LensUpdate, Summary, SummaryEdit
-from app.services import auth, db, taxonomy
+from app.services import auth, db, quotes, taxonomy
 
 router = APIRouter(prefix="/lenses", tags=["lenses"])
 
@@ -99,6 +99,19 @@ def lens_feed(
         raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Lens not found"})
     items, next_cursor = db.merged_feed(lens["topicIds"], limit=limit, before=cursor)
     return {"items": items, "nextCursor": next_cursor}
+
+
+# ── Ticker quotes ────────────────────────────────────────────────
+
+
+@router.get("/{lens_id}/quotes")
+def lens_quotes(lens_id: str, user: dict = Depends(auth.current_user)):
+    """Cached current price + today's change for the lens's tracked assets. Reads
+    only — the shared cache is refreshed out of band by the quote refresher."""
+    lens = db.get_lens(user["userId"], lens_id)
+    if lens is None:
+        raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Lens not found"})
+    return {"quotes": quotes.get_quotes(lens["trackedAssetIds"]), "asOf": db.utcnow()}
 
 
 # ── Summaries ────────────────────────────────────────────────────

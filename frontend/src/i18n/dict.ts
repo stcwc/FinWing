@@ -57,6 +57,7 @@ export const dict = {
     "lens.saving": "Saving…",
 
     // lenses feed
+    "ticker.asOf": "as of",
     "feed.loadingLenses": "Loading lenses…",
     "feed.noLenses": "No lenses yet",
     "feed.createInSettings": "Create one in Settings.",
@@ -178,6 +179,7 @@ export const dict = {
     "lens.save": "保存更改",
     "lens.saving": "保存中…",
 
+    "ticker.asOf": "截至",
     "feed.loadingLenses": "加载透镜中…",
     "feed.noLenses": "尚无透镜",
     "feed.createInSettings": "请在设置中创建。",

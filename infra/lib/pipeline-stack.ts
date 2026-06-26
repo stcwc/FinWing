@@ -162,5 +162,29 @@ export class PipelineStack extends cdk.Stack {
       schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
       targets: [new targets.LambdaFunction(scheduler)],
     });
+
+    // ── Quote refresher (EventBridge every 15 min) ──────────────
+    // Refreshes the shared lens-ticker quote cache. The cadence is the capacity
+    // knob for the Twelve Data free tier (~2 distinct symbols per refresh-minute,
+    // app-wide); the worker self-gates to US market hours. Reads lenses (scan)
+    // and writes ASSET#<id>/QUOTE into the content table.
+    const quoteRefresher = new lambda.Function(this, "QuoteRefresher", {
+      functionName: `finwing-quote-refresher-${envName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "workers.quote_refresher.handler",
+      code: backendCode(),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(60),
+      logRetention: logs.RetentionDays.TWO_WEEKS,
+      environment: baseEnv,
+    });
+    appTable.grantReadData(quoteRefresher);
+    contentTable.grantReadWriteData(quoteRefresher);
+    quoteRefresher.addToRolePolicy(ssmStmt);
+    new events.Rule(this, "QuoteRefreshSchedule", {
+      ruleName: `finwing-quote-refresh-${envName}`,
+      schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
+      targets: [new targets.LambdaFunction(quoteRefresher)],
+    });
   }
 }

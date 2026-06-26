@@ -45,6 +45,24 @@ export interface AssetMove {
   close: number;
 }
 
+export interface Quote {
+  assetId: string;
+  symbol: string;
+  name: string;
+  price: number | null;
+  change: number | null;
+  percentChange: number | null;
+  kind: "price" | "yield";
+  marketOpen: boolean;
+  asOf: string | null;
+  stale: boolean;
+}
+
+export interface QuotesResponse {
+  quotes: Quote[];
+  asOf: string;
+}
+
 export interface Summary {
   date: string;
   lensId: string;
