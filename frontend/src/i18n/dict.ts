@@ -11,6 +11,7 @@ export const dict = {
     "nav.feedback": "Feedback",
     "nav.admin": "Admin",
     "nav.chat": "Chat",
+    "nav.menu": "Menu",
     "nav.signOut": "Sign out",
     "footer.disclaimer":
       "FinWing provides news synthesis for information only — not financial advice.",
@@ -66,7 +67,7 @@ export const dict = {
     "feed.noNewsHint":
       "New articles matching this lens will appear here within a minute or two.",
     "feed.aiSummary": "AI summary",
-    "feed.dragToChat": "drag to chat",
+    "feed.addToChat": "Add to chat",
 
     // summaries
     "sum.markdownClosed": "Markets closed",
@@ -142,6 +143,7 @@ export const dict = {
     "nav.feedback": "反馈",
     "nav.admin": "管理",
     "nav.chat": "聊天",
+    "nav.menu": "菜单",
     "nav.signOut": "退出登录",
     "footer.disclaimer": "FinWing 仅提供新闻综述供参考，不构成投资建议。",
 
@@ -187,7 +189,7 @@ export const dict = {
     "feed.noNews": "尚无新闻",
     "feed.noNewsHint": "匹配该透镜的新文章将在一两分钟内显示。",
     "feed.aiSummary": "AI 摘要",
-    "feed.dragToChat": "拖入聊天",
+    "feed.addToChat": "加入聊天",
 
     "sum.markdownClosed": "休市",
     "sum.edit": "编辑",

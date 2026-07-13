@@ -14,6 +14,7 @@ import {
 import { useI18n } from "../i18n";
 import { LensComposer } from "../components/LensComposer";
 import { LensTicker } from "../components/LensTicker";
+import { useChat } from "../components/chatContext";
 import { EmptyState, Modal, Spinner, Toast, timeAgo } from "../components/ui";
 
 const POLL_MS = 45_000;
@@ -170,22 +171,34 @@ function Feed({ lens }: { lens: Lens }) {
 
 function FeedCard({ item }: { item: FeedItem }) {
   const { t, lang } = useI18n();
+  const { addAttachment, openChat } = useChat();
   // Prefer the Chinese title/abstraction in zh mode, falling back to English
   // (e.g. older articles abstracted before bilingual support).
   const title = lang === "zh" && item.titleZh ? item.titleZh : item.title;
   const abstraction =
     lang === "zh" && item.abstractionZh ? item.abstractionZh : item.abstraction;
 
-  function onDragStart(e: React.DragEvent) {
-    const payload: ArticleAttachment = {
+  function payload(): ArticleAttachment {
+    return {
       articleId: item.articleId,
       title,
       source: item.source,
       content: abstraction ?? item.excerpt,
       url: item.url,
     };
-    e.dataTransfer.setData(ARTICLE_DND_TYPE, JSON.stringify(payload));
+  }
+
+  function onDragStart(e: React.DragEvent) {
+    e.dataTransfer.setData(ARTICLE_DND_TYPE, JSON.stringify(payload()));
     e.dataTransfer.effectAllowed = "copy";
+  }
+
+  // Tap affordance (works on touch, where HTML5 drag doesn't fire): attach the
+  // article and open the chat so the action is confirmed.
+  function attach(e: React.MouseEvent) {
+    e.stopPropagation();
+    addAttachment(payload());
+    openChat();
   }
 
   return (
@@ -199,14 +212,19 @@ function FeedCard({ item }: { item: FeedItem }) {
         <span>·</span>
         <span>{timeAgo(item.publishedAt)}</span>
         <span className="ml-auto flex items-center gap-2">
-          <span className="hidden text-ink-400 group-hover:inline" aria-hidden>
-            ⠿ {t("feed.dragToChat")}
-          </span>
           {abstraction && (
             <span className="rounded-full bg-wing-500/10 px-2 py-0.5 font-medium text-wing-600">
               {t("feed.aiSummary")}
             </span>
           )}
+          <button
+            onClick={attach}
+            draggable={false}
+            className="flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-wing-500 hover:text-wing-600"
+            aria-label={t("feed.addToChat")}
+          >
+            💬 <span className="hidden sm:inline">{t("feed.addToChat")}</span>
+          </button>
         </span>
       </div>
       <a
