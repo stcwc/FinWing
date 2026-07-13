@@ -13,6 +13,9 @@ from app.prompts import ABSTRACTION_SYSTEM
 from app.services.db import content_table, utcnow
 
 
+ABSTRACTION_KEYS = ["abstraction_en", "abstraction_zh", "title_zh"]
+
+
 def _parse_json(raw: str) -> dict:
     raw = raw.strip()
     if raw.startswith("```"):
@@ -26,6 +29,30 @@ def _parse_json(raw: str) -> dict:
         return json.loads(raw)
     except json.JSONDecodeError:
         return {}
+
+
+def _tolerant(raw: str, keys: list[str]) -> dict:
+    """Extract string fields even when the JSON is malformed by unescaped inner
+    quotes — Haiku often emits Chinese terms in raw double-quotes (e.g. "山寨季"),
+    which breaks json.loads. Each value is bounded by the start of the next key
+    (or the closing brace for the last), so raw quotes inside a value don't
+    terminate it. Order-dependent: `keys` must match the emitted key order."""
+    out = {}
+    for i, k in enumerate(keys):
+        nxt = f'"{keys[i + 1]}"' if i + 1 < len(keys) else r"\}"
+        m = re.search(rf'"{k}"\s*:\s*"(.*?)"\s*,?\s*{nxt}', raw, re.DOTALL)
+        if m:
+            out[k] = m.group(1).strip().replace('\\"', '"').replace("\\n", "\n")
+    return out
+
+
+def parse_fields(raw: str, keys: list[str]) -> dict:
+    """Strict JSON first; fall back to tolerant regex extraction for the
+    malformed-inner-quote blobs strict parsing rejects."""
+    data = _parse_json(raw)
+    if all(data.get(k) for k in keys):
+        return {k: str(data[k]).strip() for k in keys}
+    return _tolerant(raw, keys)
 
 _client = None
 
@@ -54,13 +81,14 @@ def abstract_article(article_id: str) -> bool:
             }
         ],
     )
-    data = _parse_json(msg.content[0].text)
+    data = parse_fields(msg.content[0].text, ABSTRACTION_KEYS)
     abstraction = (data.get("abstraction_en") or "").strip()
     abstraction_zh = (data.get("abstraction_zh") or "").strip()
     title_zh = (data.get("title_zh") or "").strip()
     if not abstraction:
-        # Parsing failed — fall back to the raw text as the English abstraction.
-        abstraction = msg.content[0].text.strip()
+        # Even tolerant parsing failed — fall back to the clean article excerpt,
+        # never the raw model blob (which would render as JSON in the feed).
+        abstraction = (article.get("excerpt") or "").strip() or article["title"]
 
     try:
         content_table().update_item(
