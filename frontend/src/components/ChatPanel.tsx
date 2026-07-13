@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import { ARTICLE_DND_TYPE, ArticleAttachment, ChatTurn } from "../api/types";
 import { useI18n } from "../i18n";
+import { useChat } from "./chatContext";
 import { Markdown } from "./Markdown";
 
 export function ChatPanel({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
+  const { attachments, addAttachment, removeAttachment } = useChat();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [attachments, setAttachments] = useState<ArticleAttachment[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -37,17 +38,10 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
     if (!raw) return;
     e.preventDefault();
     try {
-      const a = JSON.parse(raw) as ArticleAttachment;
-      setAttachments((prev) =>
-        prev.some((p) => p.articleId === a.articleId) ? prev : [...prev, a]
-      );
+      addAttachment(JSON.parse(raw) as ArticleAttachment);
     } catch {
       /* ignore malformed payloads */
     }
-  }
-
-  function removeAttachment(id: string) {
-    setAttachments((prev) => prev.filter((a) => a.articleId !== id));
   }
 
   async function send() {
