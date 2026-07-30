@@ -45,6 +45,10 @@ SONNET_MODEL = "claude-sonnet-4-6"
 # Haiku does the same work in ~9–18s with ample margin. Daily summaries (no
 # request-timeout pressure) stay on Sonnet.
 CHAT_MODEL = HAIKU_MODEL
+# Output ceiling for a chat turn. Sized so lengthy answers finish (stop_reason
+# end_turn, not max_tokens => no mid-sentence truncation) while total request
+# latency stays under API Gateway's 30s cap. Tunable via env for headroom.
+CHAT_MAX_TOKENS = int(os.environ.get("CHAT_MAX_TOKENS", "2000"))
 
 ARTICLE_TTL_DAYS = 30
 PRICE_CACHE_TTL_DAYS = 7
