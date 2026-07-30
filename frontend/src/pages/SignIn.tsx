@@ -24,16 +24,8 @@ export default function SignIn() {
       <div className="card w-full max-w-sm p-8 text-center">
         <img src="/finwing-logo.png" alt="FinWing" className="mx-auto mb-3 h-11 w-auto" />
         <p className="mt-2 text-sm text-ink-400">{t("signin.tagline")}</p>
-        <a href={hostedUiSignInUrl("Google")} className="btn-outline mt-6 w-full">
+        <a href={hostedUiSignInUrl("Google")} className="btn-primary mt-6 w-full">
           <GoogleIcon /> {t("signin.google")}
-        </a>
-        <div className="my-3 flex items-center gap-3 text-xs text-ink-400">
-          <span className="h-px flex-1 bg-ink-200" />
-          {t("signin.or")}
-          <span className="h-px flex-1 bg-ink-200" />
-        </div>
-        <a href={hostedUiSignInUrl()} className="btn-primary w-full">
-          {t("signin.email")}
         </a>
         <p className="mt-4 text-xs text-ink-400">{t("signin.disclaimer")}</p>
         <p className="mt-4 text-xs text-ink-400">

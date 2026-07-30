@@ -71,7 +71,8 @@ export class FoundationStack extends cdk.Stack {
     // ── Cognito ─────────────────────────────────────────────────
     this.userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: `finwing-${envName}`,
-      selfSignUpEnabled: true,
+      // Google-only: no native email/password self-registration (retired 2026-07).
+      selfSignUpEnabled: false,
       signInAliases: { email: true },
       autoVerify: { email: true },
       standardAttributes: { email: { required: true, mutable: true } },
@@ -176,10 +177,13 @@ export class FoundationStack extends cdk.Stack {
         callbackUrls,
         logoutUrls,
       },
-      supportedIdentityProviders: [
-        cognito.UserPoolClientIdentityProvider.COGNITO,
-        ...(googleIdp ? [cognito.UserPoolClientIdentityProvider.GOOGLE] : []),
-      ],
+      // Google-only sign-in. Native email/password was retired (2026-07) to
+      // avoid the unconfirmed-signup dead-end; federated users are provisioned
+      // regardless of selfSignUpEnabled. Fall back to COGNITO only in the
+      // degenerate local-synth case where the Google IdP isn't configured.
+      supportedIdentityProviders: googleIdp
+        ? [cognito.UserPoolClientIdentityProvider.GOOGLE]
+        : [cognito.UserPoolClientIdentityProvider.COGNITO],
     });
     // The client must be created after the Google IdP it references.
     if (googleIdp) {
