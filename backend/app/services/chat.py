@@ -99,7 +99,7 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     resp = None
     for _ in range(_MAX_TURNS):
         resp = client.messages.create(
-            model=settings.SONNET_MODEL,
+            model=settings.CHAT_MODEL,
             max_tokens=1500,
             system=system_blocks,
             tools=WEB_TOOLS,
