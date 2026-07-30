@@ -38,6 +38,30 @@ def _client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=settings.anthropic_api_key())
 
 
+# Sentence terminators for both English and Chinese, incl. trailing close-quotes.
+_SENTENCE_END = tuple(".!?。！？…")
+
+
+def _trim_to_sentence(text: str) -> str:
+    """Cut back to the last complete sentence so a budget-truncated answer ends
+    cleanly instead of mid-word. Falls back to the original text if no sentence
+    boundary is found (keeps at least something to show)."""
+    cut = max(text.rfind(ch) for ch in _SENTENCE_END)
+    # Keep any immediate closing quote/paren that follows the terminator.
+    if cut == -1:
+        return text.rstrip()
+    tail = cut + 1
+    while tail < len(text) and text[tail] in "”\"’')）」』":
+        tail += 1
+    return text[:tail].rstrip()
+
+
+def _more_note(language: str) -> str:
+    if language == "zh":
+        return "\n\n*（回答较长，已在此收尾；需要的话我可以展开其中某一部分。）*"
+    return "\n\n*(Trimmed to keep it readable — ask me to expand on any part.)*"
+
+
 def _financial_context(user_id: str) -> str:
     lenses = db.list_lenses(user_id)
     from app.services import taxonomy
@@ -100,7 +124,7 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
     for _ in range(_MAX_TURNS):
         resp = client.messages.create(
             model=settings.CHAT_MODEL,
-            max_tokens=1500,
+            max_tokens=settings.CHAT_MAX_TOKENS,
             system=system_blocks,
             tools=WEB_TOOLS,
             messages=messages,
@@ -114,6 +138,11 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
 
     # Final answer is the text block(s); other blocks are server tool use/results.
     answer = "".join(b.text for b in resp.content if b.type == "text").strip()
+    # If the model exhausted its token budget it stops mid-sentence. Rather than
+    # show a jarring cut-off, trim back to the last complete sentence and invite
+    # the user to expand — a clean ending regardless of where the model stopped.
+    if resp.stop_reason == "max_tokens" and answer:
+        answer = _trim_to_sentence(answer) + _more_note(language)
     if not answer:
         answer = "I couldn't find an answer to that. Please try rephrasing."
     db.append_chat_turn(user_id, "assistant", answer)
