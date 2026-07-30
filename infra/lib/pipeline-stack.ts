@@ -11,6 +11,8 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as ses from "aws-cdk-lib/aws-ses";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import { backendCode, matchingImage } from "./lambda-code";
 
 interface Props extends cdk.StackProps {
@@ -130,6 +132,78 @@ export class PipelineStack extends cdk.Stack {
       })
     );
     sesEventsTopic.addSubscription(new subs.LambdaSubscription(sesEvents));
+
+    // ── Reputation kill-switch (CloudWatch alarms → auto-pause) ──
+    // Alarms watch the digest config set's bounce/complaint rates against the
+    // SES enforcement thresholds (bounce 5%, complaint 0.1%). On breach they
+    // fan out to an alarm topic that (a) notifies the operator and (b) triggers
+    // a Lambda that disables sending on the config set, halting digests before
+    // the account's reputation can degrade far enough for SES to suspend it.
+    const alarmTopic = new sns.Topic(this, "SesAlarmTopic", {
+      topicName: `finwing-ses-alarms-${envName}`,
+    });
+    const alarmEmail = process.env.FINWING_ALARM_EMAIL ?? "john0707ieem@gmail.com";
+    alarmTopic.addSubscription(new subs.EmailSubscription(alarmEmail));
+
+    const sesPause = new lambda.Function(this, "SesPause", {
+      functionName: `finwing-ses-pause-${envName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "workers.ses_pause.handler",
+      code: backendCode(),
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(30),
+      logRetention: logs.RetentionDays.TWO_WEEKS,
+      environment: { ...baseEnv, EMAIL_CONFIG_SET: emailConfigSet.configurationSetName },
+    });
+    sesPause.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:PutConfigurationSetSendingOptions"],
+        resources: [
+          `arn:aws:ses:${this.region}:${this.account}:configuration-set/finwing-${envName}`,
+        ],
+      })
+    );
+    alarmTopic.addSubscription(new subs.LambdaSubscription(sesPause));
+
+    // Reputation metrics are attributed to the config set that sent the mail.
+    // Rates are fractions (5% = 0.05); alarm on the worst reading each hour and
+    // treat "no sending" as healthy so idle periods never trip the switch.
+    const repDim = { "ses:configuration-set": emailConfigSet.configurationSetName };
+    const bounceAlarm = new cloudwatch.Alarm(this, "SesBounceRateAlarm", {
+      alarmName: `finwing-ses-bounce-rate-${envName}`,
+      alarmDescription: "SES bounce rate for the digest config set at/above the 5% enforcement threshold",
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/SES",
+        metricName: "Reputation.BounceRate",
+        dimensionsMap: repDim,
+        statistic: "Maximum",
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 0.05,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      datapointsToAlarm: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    const complaintAlarm = new cloudwatch.Alarm(this, "SesComplaintRateAlarm", {
+      alarmName: `finwing-ses-complaint-rate-${envName}`,
+      alarmDescription: "SES complaint rate for the digest config set at/above the 0.1% enforcement threshold",
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/SES",
+        metricName: "Reputation.ComplaintRate",
+        dimensionsMap: repDim,
+        statistic: "Maximum",
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 0.001,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      datapointsToAlarm: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    for (const a of [bounceAlarm, complaintAlarm]) {
+      a.addAlarmAction(new cwActions.SnsAction(alarmTopic));
+    }
 
     // ── Summary generator (async-invoked per lens) ──────────────
     // Emails the daily summary via SES; EMAIL_SENDER must be a verified SES
