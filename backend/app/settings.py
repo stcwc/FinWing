@@ -40,6 +40,11 @@ MAX_ASSETS_PER_LENS = 10
 
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
 SONNET_MODEL = "claude-sonnet-4-6"
+# The chat side-panel runs behind API Gateway's hard 30s ceiling and does live
+# web search per turn. Sonnet + 2 searches ran 20–28s and intermittently 504'd;
+# Haiku does the same work in ~9–18s with ample margin. Daily summaries (no
+# request-timeout pressure) stay on Sonnet.
+CHAT_MODEL = HAIKU_MODEL
 
 ARTICLE_TTL_DAYS = 30
 PRICE_CACHE_TTL_DAYS = 7
