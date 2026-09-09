@@ -42,9 +42,12 @@ HAIKU_MODEL = "claude-haiku-4-5-20251001"
 SONNET_MODEL = "claude-sonnet-4-6"
 # The chat side-panel runs behind API Gateway's hard 30s ceiling and does live
 # web search per turn. Sonnet + 2 searches ran 20–28s and intermittently 504'd;
-# Haiku does the same work in ~9–18s with ample margin. Daily summaries (no
-# request-timeout pressure) stay on Sonnet.
+# Haiku does the same work in ~9–18s with ample margin.
 CHAT_MODEL = HAIKU_MODEL
+# Daily summaries were the dominant Claude cost (~75% of spend) on Sonnet, and
+# scale with users×lenses×days. Haiku does the digest at ~1/5 the price; the
+# quality tradeoff is acceptable for a news recap. Tunable via env to flip back.
+SUMMARY_MODEL = os.environ.get("SUMMARY_MODEL", HAIKU_MODEL)
 # Output ceiling for a chat turn. Sized so lengthy answers finish (stop_reason
 # end_turn, not max_tokens => no mid-sentence truncation) while total request
 # latency stays under API Gateway's 30s cap. Tunable via env for headroom.

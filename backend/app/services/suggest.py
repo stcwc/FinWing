@@ -11,7 +11,7 @@ import anthropic
 
 from app import settings
 from app.prompts import SUGGEST_SYSTEM
-from app.services import taxonomy
+from app.services import taxonomy, usage
 
 
 def _build_catalogs() -> tuple[str, str]:
@@ -59,6 +59,7 @@ def suggest(text: str) -> dict:
         ],
         messages=[{"role": "user", "content": f"User interests: {text}\n\nReturn the JSON object."}],
     )
+    usage.log_usage("suggest", settings.HAIKU_MODEL, resp)
     data = _parse_json(resp.content[0].text)
 
     topics = taxonomy.topics()
