@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 
 from app import settings
 from app.prompts import ABSTRACTION_SYSTEM
+from app.services import usage
 from app.services.db import content_table, utcnow
 
 
@@ -81,6 +82,7 @@ def abstract_article(article_id: str) -> bool:
             }
         ],
     )
+    usage.log_usage("abstraction", settings.HAIKU_MODEL, msg, articleId=article_id)
     data = parse_fields(msg.content[0].text, ABSTRACTION_KEYS)
     abstraction = (data.get("abstraction_en") or "").strip()
     abstraction_zh = (data.get("abstraction_zh") or "").strip()

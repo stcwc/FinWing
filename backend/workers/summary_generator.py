@@ -14,7 +14,7 @@ from app.prompts import (
     SUMMARY_NEWS_ONLY_SYSTEM,
     summary_language_directive,
 )
-from app.services import db, email, taxonomy
+from app.services import db, email, taxonomy, usage
 from workers import prices
 
 _client = None
@@ -141,13 +141,14 @@ def generate(
     user_turn = build_user_turn(lens, articles, asset_moves, prior, date, news_only)
 
     resp = client().messages.create(
-        model=settings.SONNET_MODEL,
+        model=settings.SUMMARY_MODEL,
         # Generous ceiling so summaries are never truncated — Chinese uses ~1
         # token/char, so the old 600 cap cut zh summaries off mid-sentence.
         max_tokens=2000,
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_turn}],
     )
+    usage.log_usage("summary", settings.SUMMARY_MODEL, resp, userId=user_id, lensId=lens_id)
     body = resp.content[0].text.strip()
 
     moves_attr = [

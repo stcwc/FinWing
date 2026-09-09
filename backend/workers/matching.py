@@ -15,6 +15,7 @@ from boto3.dynamodb.conditions import Key
 
 from app import settings
 from app.prompts import matching_tiebreak_prompt
+from app.services import usage
 from app.services.db import content_table, utcnow
 
 SIM_THRESHOLD = 0.68
@@ -134,6 +135,7 @@ def haiku_confirms(title: str, topic_name: str) -> bool:
             {"role": "user", "content": matching_tiebreak_prompt(topic_name, title)}
         ],
     )
+    usage.log_usage("matching_tiebreak", settings.HAIKU_MODEL, resp)
     return resp.content[0].text.strip().upper().startswith("YES")
 
 

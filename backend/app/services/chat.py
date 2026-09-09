@@ -9,7 +9,7 @@ import anthropic
 
 from app import settings
 from app.prompts import CHAT_SYSTEM, chat_language_line
-from app.services import db
+from app.services import db, usage
 
 # Anthropic server-side web search, executed on Anthropic's infrastructure.
 #
@@ -129,6 +129,7 @@ def respond(user_id: str, message: str, attachments: list[dict] | None = None) -
             tools=WEB_TOOLS,
             messages=messages,
         )
+        usage.log_usage("chat", settings.CHAT_MODEL, resp, userId=user_id)
         if resp.stop_reason != "pause_turn":
             break
         messages.append({"role": "assistant", "content": resp.content})
@@ -174,6 +175,7 @@ def _compact(user_id: str, state: dict, window: list[dict]) -> None:
             }
         ],
     )
+    usage.log_usage("chat_compact", settings.HAIKU_MODEL, resp, userId=user_id)
     db.update_chat_state(
         user_id, resp.content[0].text.strip(), int(state.get("totalTurns", 0))
     )
