@@ -64,7 +64,7 @@ is clean and all stored data is gone by design — a revival is a fresh start.
 
 ```bash
 cd infra && npm ci
-npx cdk deploy --all --context env=beta   # recreates all resources + DNS records
+npx cdk deploy --all --context env=beta   # recreates all app resources (see Domain & DNS caveat for the custom domain)
 # then re-seed the taxonomy (same step the deploy workflow runs):
 python infra/scripts/seed_taxonomy.py --table finwing-content-beta --static-out frontend/dist
 ```
@@ -79,7 +79,24 @@ CDK-created — the stacks only reference them):
 - ACM certs in `us-east-1` (site + Cognito hosted-UI wildcard)
 - The CDK bootstrap stack and the GitHub OIDC deploy role
 
-> The `finwingnews.com` domain registration and its Route 53 hosted zone are a
-> separate keep-or-release decision recorded at sunset time; if released, a
-> revival must supply a new domain, cert ARNs, and hosted-zone id in
-> `infra/bin/finwing.ts`.
+### Domain & DNS caveat
+
+At sunset the `finwingnews.com` **domain registration was kept but auto-renew was
+turned off** — it stays yours until it **expires on 2027-06-18**, then lapses with
+no further charge. Its Route 53 **hosted zone was deleted** along with everything
+else, so DNS is no longer served for the name.
+
+Because the zone is gone, the one-command revival above brings the app back on its
+raw CloudFront/API URLs but **not** on `finwingnews.com`. Restoring the custom
+domain is a race against the expiry date and takes extra steps — realistically
+unlikely, but if you do it before **2027-06-18**:
+
+1. Recreate a hosted zone for `finwingnews.com` (Route 53 issues a **new** zone id
+   and **new** name servers).
+2. Point the domain's NS delegation at those name servers and wait for propagation.
+3. Update the hardcoded `hostedZoneId` (and cert ARNs, if re-issued) in
+   `infra/bin/finwing.ts`, then `cdk deploy --all --context env=beta` to recreate
+   the A/AAAA + SES DNS records.
+
+After 2027-06-18 the name may be registered by anyone, so revival then means a
+brand-new domain plus the same steps.
