@@ -72,12 +72,18 @@ python infra/scripts/seed_taxonomy.py --table finwing-content-beta --static-out 
 To restore continuous deployment, re-add the `push:` trigger in
 `.github/workflows/deploy.yml` (see the SUNSET comment there).
 
-Resources **preserved** across the sunset so revival stays easy (none are
-CDK-created — the stacks only reference them):
+Resources **preserved** across the sunset so revival stays easy:
 
-- SSM secrets under `/finwing/beta/*` (API keys, Google OAuth, unsubscribe secret)
-- ACM certs in `us-east-1` (site + Cognito hosted-UI wildcard)
+- ACM certs in `us-east-1` (site + Cognito hosted-UI wildcard), referenced by ARN
 - The CDK bootstrap stack and the GitHub OIDC deploy role
+
+**Secrets were deleted.** All `/finwing/beta/*` SSM params were removed at sunset.
+On revival, `cdk deploy` recreates the three placeholder params
+(`anthropic-api-key`, `finnhub-api-key`, `twelvedata-api-key`) as `REPLACE_ME`,
+and you must re-create/populate every secret before the app works:
+`google-client-id`, `google-client-secret`, `fred-api-key`, `feed-sources`,
+`unsubscribe-secret`, plus real values for the three placeholders. Treat the old
+keys as retired and issue fresh ones at each provider.
 
 ### Domain & DNS caveat
 
