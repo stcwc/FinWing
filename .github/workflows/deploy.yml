@@ -1,8 +1,12 @@
 name: deploy
 
 on:
-  push:
-    branches: [main]
+  # ── Project SUNSET 2026-11-09 ───────────────────────────────────────────────
+  # Auto-deploy on push to main is DISABLED: no active users, AWS stacks torn
+  # down (see README "Sunset & revival"). Deployment is now manual-only and is
+  # the revival path. To restore continuous deployment, re-add under `on:`:
+  #   push:
+  #     branches: [main]
   workflow_dispatch:
     inputs:
       deploy_prod:
